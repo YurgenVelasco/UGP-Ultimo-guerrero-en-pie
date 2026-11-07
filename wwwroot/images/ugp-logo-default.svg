@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="20" fill="#0B0B0B"/>
+  <text x="100" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="52" fill="#D4AF37">UGP</text>
+  <line x1="30" y1="110" x2="170" y2="110" stroke="#D4AF37" stroke-width="2"/>
+  <text x="100" y="138" text-anchor="middle" font-family="Arial, sans-serif" font-weight="600" font-size="14" fill="#D4AF37" opacity="0.8">ULTIMATE GRAPPLING</text>
+</svg>

@@ -1,0 +1,34 @@
+[
+  {
+    "ContainingType": "UGP_ultimo_guerrero_en_pie_.Controllers.BoletosController",
+    "Method": "DescargarOrden",
+    "RelativePath": "api/Boletos/descargar-orden/{compraId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "compraId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UGP_ultimo_guerrero_en_pie_.Controllers.BoletosController",
+    "Method": "DescargarTicket",
+    "RelativePath": "api/Boletos/descargar/{ticketId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -1,0 +1,85 @@
+@rendermode InteractiveServer
+
+<nav class="navbar navbar-expand-lg navbar-dark ugp-navbar sticky-top">
+    <div class="container">
+        <!-- Logo UGP -->
+        <a class="navbar-brand d-flex align-items-center gap-2" href="">
+            <img src="images/ugp-logo-default.svg" alt="UGP Logo" height="42" />
+            <span class="d-none d-sm-inline">UGP</span>
+        </a>
+
+        <!-- Mobile Toggler -->
+        <button class="navbar-toggler border-0" type="button" @onclick="ToggleNavMenu" aria-controls="ugpNavbarNav" aria-expanded="@(!collapseNavMenu)" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Nav Items -->
+        <div class="collapse navbar-collapse @(collapseNavMenu ? "" : "show")" id="ugpNavbarNav">
+            <!-- Center Navigation Links -->
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0 text-center">
+                <li class="nav-item">
+                    <NavLink class="nav-link ugp-nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        Inicio
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link ugp-nav-link" href="#eventos" @onclick="CloseNavMenu">
+                        Eventos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link ugp-nav-link" href="#peleadores" @onclick="CloseNavMenu">
+                        Peleadores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link ugp-nav-link" href="#experiencias" @onclick="CloseNavMenu">
+                        Experiencias
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link ugp-nav-link" href="#patrocinadores" @onclick="CloseNavMenu">
+                        Patrocinadores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link ugp-nav-link text-warning" href="checkout/confirmacion" @onclick="CloseNavMenu">
+                        Mis Boletos
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right Actions: Scanner / Comprar / Login -->
+            <div class="d-flex flex-column flex-lg-row align-items-center gap-2 mt-3 mt-lg-0">
+                <a href="#validar-boleto" class="btn btn-sm btn-outline-secondary text-light px-3 py-1 d-inline-flex align-items-center gap-1 border-secondary" title="Control de Acceso / Validar Boleto" @onclick="CloseNavMenu">
+                    <i class="bi bi-qr-code-scan"></i>
+                    <span class="small">Validar Boleto</span>
+                </a>
+
+                <a href="checkout" class="btn-ugp-gold btn-sm px-3 py-2 text-decoration-none" @onclick="CloseNavMenu">
+                    <i class="bi bi-ticket-perforated-fill"></i>
+                    <span>COMPRAR ENTRADAS</span>
+                </a>
+
+                <a href="login" class="btn btn-sm btn-outline-light px-3 py-1 d-inline-flex align-items-center gap-1" title="Iniciar Sesión" @onclick="CloseNavMenu">
+                    <i class="bi bi-person-circle"></i>
+                    <span class="small">Acceso</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void CloseNavMenu()
+    {
+        collapseNavMenu = true;
+    }
+}

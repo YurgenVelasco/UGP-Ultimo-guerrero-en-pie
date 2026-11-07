@@ -1,0 +1,405 @@
+@page "/checkout/confirmacion"
+@page "/checkout/confirmacion/{Referencia}"
+@rendermode InteractiveServer
+@inject ICompraService CompraService
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Confirmación de Compra y Boletos | UGP</PageTitle>
+
+<div class="py-5" style="background: radial-gradient(circle at 50% 10%, rgba(212,175,55,0.08) 0%, rgba(11,11,11,1) 85%); min-height: 88vh;">
+    <div class="container py-4">
+
+        @if (Cargando)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-warning" role="status" style="width: 3.5rem; height: 3.5rem;">
+                    <span class="visually-hidden">Consultando orden...</span>
+                </div>
+                <p class="text-secondary mt-3 font-monospace">Verificando estado de tu orden en la arena UGP...</p>
+            </div>
+        }
+        else if (CompraActual == null)
+        {
+            <!-- Caso: No se encontró orden o se ingresó sin referencia -->
+            <div class="row justify-content-center">
+                <div class="col-lg-6 text-center py-5">
+                    <div class="ugp-card p-5 border-secondary">
+                        <i class="bi bi-search display-3 text-warning mb-3"></i>
+                        <h3 class="text-white fw-bold mb-2">Consulta de Boletos UGP</h3>
+                        <p class="text-secondary small mb-4">Ingresa tu número de referencia de pago o código de folio para visualizar y descargar tus entradas oficiales.</p>
+
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control bg-black text-white border-secondary font-monospace" 
+                                   placeholder="Ej: UGP-TX-20261106-000001" 
+                                   @bind="ReferenciaBusqueda" 
+                                   @bind:event="oninput" 
+                                   @onkeyup="ManejarEnterBusqueda" />
+                            <button class="btn btn-ugp-gold" type="button" @onclick="BuscarPorReferenciaManual">
+                                <i class="bi bi-search me-1"></i> Consultar
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(MensajeError))
+                        {
+                            <div class="alert alert-danger bg-danger bg-opacity-25 border-danger text-white small mt-3" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> @MensajeError
+                            </div>
+                        }
+
+                        <a href="" class="btn btn-outline-secondary btn-sm mt-3 text-white">
+                            <i class="bi bi-arrow-left me-1"></i> Volver a la Cartelera
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Cabecera de la Orden -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-10">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom border-secondary pb-3">
+                        <div>
+                            <span class="ugp-badge-gold mb-1">COMPROBANTE OFICIAL DE BOLETERÍA</span>
+                            <h2 class="text-white fw-bold mb-0">ORDEN #@CompraActual.CompraId</h2>
+                            <div class="small text-secondary font-monospace">Referencia: <span class="text-warning">@(Referencia ?? $"UGP-TX-{CompraActual.FechaCompra:yyyyMMdd}-{CompraActual.CompraId:D6}")</span></div>
+                        </div>
+
+                        <div>
+                            @if (CompraActual.EstadoPago == "Aprobado")
+                            {
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2 fs-6">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Pago Aprobado
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning px-3 py-2 fs-6">
+                                    <i class="bi bi-hourglass-split me-1"></i> Pago Pendiente
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (CompraActual.EstadoPago != "Aprobado")
+            {
+                <!-- ==========================================
+                     ESTADO PENDIENTE
+                     ========================================== -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-lg-10">
+                        <div class="p-4 bg-dark bg-opacity-50 border border-warning rounded-3 shadow">
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bi bi-clock-history text-warning display-5"></i>
+                                <div>
+                                    <h4 class="text-white fw-bold mb-1">Transacción en proceso de validación</h4>
+                                    <p class="text-secondary small mb-3">
+                                        Estamos esperando la confirmación de la pasarela bancaria oficial de Wompi. Una vez procesado el pago, tus boletos con firma digital y códigos QR se activarán automáticamente en esta pantalla.
+                                    </p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-ugp-gold btn-sm" @onclick="SimularAprobacion" disabled="@ProcesandoAprobacion">
+                                            @if (ProcesandoAprobacion)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                                <span>Aprobando orden...</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-shield-check me-1"></i>
+                                                <span>Verificar / Simular Aprobación (Dev Mode)</span>
+                                            }
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm text-white" @onclick="RecargarDatos">
+                                            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar Estado
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- ==========================================
+                     ESTADO APROBADO: RESUMEN Y BOLETOS
+                     ========================================== -->
+                <div class="row justify-content-center mb-5">
+                    <div class="col-lg-10">
+                        <div class="card p-4 border-warning shadow-lg text-center position-relative overflow-hidden" 
+                             style="background: linear-gradient(145deg, #161616 0%, #0d0d0d 100%);">
+                            
+                            <!-- Resplandor decorativo -->
+                            <div class="position-absolute top-0 start-50 translate-middle rounded-circle" 
+                                 style="width: 250px; height: 120px; background: radial-gradient(circle, rgba(212,175,55,0.3) 0%, rgba(0,0,0,0) 70%); filter: blur(25px);"></div>
+
+                            <div class="position-relative" style="z-index: 2;">
+                                <div class="mb-3">
+                                    <i class="bi bi-patch-check-fill text-warning display-3"></i>
+                                </div>
+                                <h2 class="text-white fw-bold mb-1">¡PAGO CONFIRMADO CON ÉXITO!</h2>
+                                <p class="text-secondary small mb-4">Tus entradas oficiales para la arena UGP han sido emitidas con firma criptográfica y folio de seguridad.</p>
+
+                                <!-- Grid de Detalles del Evento y Compra -->
+                                <div class="row g-3 text-start bg-black bg-opacity-70 p-3 rounded-3 border border-secondary mb-4">
+                                    <div class="col-sm-6 col-md-3">
+                                        <span class="text-secondary small font-monospace">EVENTO:</span>
+                                        <div class="text-white fw-bold">@(CompraActual.Evento?.Nombre ?? "UGP Combate")</div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <span class="text-secondary small font-monospace">FECHA & HORA:</span>
+                                        <div class="text-white">@(CompraActual.Evento != null ? $"{CompraActual.Evento.Fecha:dd/MM/yyyy} - {CompraActual.Evento.Hora:hh:mm tt}" : "Por definir")</div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <span class="text-secondary small font-monospace">RECINTO:</span>
+                                        <div class="text-white">@(CompraActual.Evento?.Lugar)</div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <span class="text-secondary small font-monospace">TOTAL PAGADO:</span>
+                                        <div class="text-warning fw-bold fs-5 font-monospace">$@CompraActual.MontoTotal.ToString("N0") COP</div>
+                                    </div>
+                                </div>
+
+                                <!-- Botón Descargar Consolidado A4 -->
+                                <div class="d-flex flex-wrap justify-content-center gap-3">
+                                    <a href="/api/boletos/descargar-orden/@CompraActual.CompraId" target="_blank" class="btn-ugp-gold btn-lg py-3 px-4 text-decoration-none">
+                                        <i class="bi bi-file-earmark-pdf-fill me-2 fs-5"></i>
+                                        <span>DESCARGAR TODAS LAS ENTRADAS (PDF RESUMEN A4)</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==========================================
+                     LISTADO DE BOLETOS INDIVIDUALES (A6)
+                     ========================================== -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-lg-10">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-white fw-bold font-monospace mb-0">
+                                <i class="bi bi-ticket-perforated-fill text-warning me-2"></i>
+                                TUS BOLETOS DIGITALES (@CompraActual.Tickets.Count)
+                            </h4>
+                            <span class="text-secondary small">Presenta este código QR en la entrada</span>
+                        </div>
+
+                        <div class="row g-4">
+                            @foreach (var ticket in CompraActual.Tickets)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card bg-black border border-warning rounded-3 p-3 h-100 shadow position-relative">
+                                        <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
+                                            <span class="ugp-badge-gold">@ticket.CodigoUnico</span>
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success small">@ticket.Estado</span>
+                                        </div>
+
+                                        <div class="row align-items-center g-3">
+                                            <div class="col-7">
+                                                <div class="mb-2">
+                                                    <span class="text-secondary small">Titular / Asistente:</span>
+                                                    <div class="text-white fw-bold">@(ticket.Asistente?.Nombre) @(ticket.Asistente?.Apellido)</div>
+                                                    <span class="text-muted small font-monospace">Doc: @(ticket.Asistente?.NumeroDocumento ?? "N/A")</span>
+                                                </div>
+
+                                                <div class="mb-2">
+                                                    <span class="text-secondary small">Localidad:</span>
+                                                    <div class="text-warning fw-bold">@(ticket.TipoTicket ?? ticket.Zona ?? "General")</div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <span class="text-secondary small">Precio:</span>
+                                                    <div class="text-white font-monospace">$@((ticket.Precio ?? 0).ToString("N0")) COP</div>
+                                                </div>
+
+                                                <a href="/api/boletos/descargar/@ticket.TicketId" target="_blank" class="btn btn-outline-warning btn-sm w-100 text-decoration-none">
+                                                    <i class="bi bi-download me-1"></i> Descargar Entrada (PDF)
+                                                </a>
+                                            </div>
+
+                                            <div class="col-5 text-center">
+                                                <div class="bg-white p-2 rounded-2 d-inline-block shadow-sm">
+                                                    @if (!string.IsNullOrWhiteSpace(ticket.QrPath))
+                                                    {
+                                                        <img src="/@ticket.QrPath" class="img-fluid" style="width: 110px; height: 110px;" alt="Código QR @ticket.CodigoUnico" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-qr-code text-black" style="font-size: 5rem;"></i>
+                                                    }
+                                                </div>
+                                                <div class="text-secondary small font-monospace mt-1" style="font-size: 0.7rem;">Cripto HMAC-SHA256</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Navegación Inferior -->
+            <div class="row justify-content-center mt-5">
+                <div class="col-lg-10 text-center">
+                    <a href="" class="btn btn-outline-secondary px-4 py-2 text-white">
+                        <i class="bi bi-arrow-left me-1"></i> Volver a la Cartelera de Combates
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Referencia { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reference")]
+    public string? QueryReference { get; set; }
+
+    [SupplyParameterFromQuery(Name = "id")]
+    public string? QueryId { get; set; }
+
+    private bool Cargando = true;
+    private bool ProcesandoAprobacion = false;
+    private string MensajeError = "";
+    private string ReferenciaBusqueda = "";
+
+    private Compra? CompraActual;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarOrdenAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CompraActual == null)
+        {
+            await CargarOrdenAsync();
+        }
+    }
+
+    private async Task CargarOrdenAsync()
+    {
+        Cargando = true;
+        MensajeError = "";
+        try
+        {
+            var refFinal = !string.IsNullOrWhiteSpace(Referencia) 
+                ? Referencia 
+                : (!string.IsNullOrWhiteSpace(QueryReference) ? QueryReference : QueryId);
+
+            if (!string.IsNullOrWhiteSpace(refFinal))
+            {
+                CompraActual = await CompraService.ObtenerCompraPorReferenciaAsync(refFinal);
+            }
+
+            // Si aún no se encuentra y la BD tiene compras, tomar la última compra como conveniencia
+            if (CompraActual == null)
+            {
+                CompraActual = await Db.Compras
+                    .Include(c => c.Evento).ThenInclude(e => e.Venue)
+                    .Include(c => c.Visitante)
+                    .Include(c => c.Tickets).ThenInclude(t => t.Asistente)
+                    .Include(c => c.DetalleCompras).ThenInclude(d => d.TipoEntrada)
+                    .OrderByDescending(c => c.CompraId)
+                    .FirstOrDefaultAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeError = $"Error al consultar la orden: {ex.Message}";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
+
+    private async Task BuscarPorReferenciaManual()
+    {
+        if (string.IsNullOrWhiteSpace(ReferenciaBusqueda))
+        {
+            MensajeError = "Por favor ingresa una referencia o código de compra válido.";
+            return;
+        }
+
+        Cargando = true;
+        MensajeError = "";
+        try
+        {
+            var compra = await CompraService.ObtenerCompraPorReferenciaAsync(ReferenciaBusqueda);
+            if (compra != null)
+            {
+                CompraActual = compra;
+                Referencia = ReferenciaBusqueda;
+            }
+            else
+            {
+                MensajeError = "No se encontró ninguna compra con la referencia ingresada.";
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeError = $"Error al buscar: {ex.Message}";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
+
+    private async Task ManejarEnterBusqueda(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BuscarPorReferenciaManual();
+        }
+    }
+
+    private async Task SimularAprobacion()
+    {
+        if (CompraActual == null) return;
+
+        ProcesandoAprobacion = true;
+        try
+        {
+            var exito = await CompraService.AprobarCompraYGenerarTicketsAsync(CompraActual.CompraId);
+            if (exito)
+            {
+                await RecargarDatos();
+            }
+            else
+            {
+                MensajeError = "No se pudo aprobar la compra en este momento.";
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeError = $"Error durante la aprobación: {ex.Message}";
+        }
+        finally
+        {
+            ProcesandoAprobacion = false;
+        }
+    }
+
+    private async Task RecargarDatos()
+    {
+        if (CompraActual != null)
+        {
+            CompraActual = await Db.Compras
+                .Include(c => c.Evento).ThenInclude(e => e.Venue)
+                .Include(c => c.Visitante)
+                .Include(c => c.Tickets).ThenInclude(t => t.Asistente)
+                .Include(c => c.DetalleCompras).ThenInclude(d => d.TipoEntrada)
+                .FirstOrDefaultAsync(c => c.CompraId == CompraActual.CompraId);
+        }
+    }
+}

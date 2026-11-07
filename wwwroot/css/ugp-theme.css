@@ -1,0 +1,523 @@
+/* ==========================================================================
+   UGP (Ultimate Grappling Promotion) - Theme Stylesheet
+   MMA / Combat Sports Visual Identity: Dark #0B0B0B, Gold #D4AF37, Red #C8102E
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta de Combate UGP */
+    --ugp-black: #0B0B0B;
+    --ugp-dark-1: #0D0D0D;
+    --ugp-dark-2: #141414;
+    --ugp-dark-3: #1A1A1A;
+    --ugp-dark-card: #161616;
+    --ugp-dark-elevated: #222222;
+
+    /* Acentos Dorados (Campeón) */
+    --ugp-gold: #D4AF37;
+    --ugp-gold-light: #F3C644;
+    --ugp-gold-hover: #E5BE39;
+    --ugp-gold-glow: rgba(212, 175, 55, 0.35);
+    --ugp-gold-subtle: rgba(212, 175, 55, 0.12);
+
+    /* Rojo de Combate / Esquina Roja */
+    --ugp-red: #C8102E;
+    --ugp-red-hover: #E01235;
+    --ugp-red-glow: rgba(200, 16, 46, 0.4);
+
+    /* Azul de Esquina Azul */
+    --ugp-blue: #0056B3;
+
+    /* Tipografías y Colores de Texto */
+    --text-white: #FFFFFF;
+    --text-muted: #A0A0A0;
+    --text-dim: #707070;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-gold: rgba(212, 175, 55, 0.25);
+
+    --font-heading: 'Oswald', 'Impact', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Base & Reset */
+html, body {
+    background-color: var(--ugp-black) !important;
+    color: var(--text-white) !important;
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
+    scroll-behavior: smooth;
+}
+
+h1, h2, h3, h4, h5, h6, .ugp-title {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+/* Navbar UGP */
+.ugp-navbar {
+    background: rgba(11, 11, 11, 0.88) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-gold);
+    transition: all 0.3s ease;
+    z-index: 1040;
+    padding: 0.75rem 0;
+}
+
+.ugp-navbar .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ugp-gold) !important;
+    letter-spacing: 2px;
+}
+
+.ugp-navbar .navbar-brand img {
+    height: 42px;
+    width: auto;
+    filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.3));
+}
+
+.ugp-nav-link {
+    color: var(--text-white) !important;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.2s ease, transform 0.2s ease;
+    position: relative;
+}
+
+.ugp-nav-link:hover, .ugp-nav-link.active {
+    color: var(--ugp-gold) !important;
+}
+
+.ugp-nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--ugp-gold);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.ugp-nav-link:hover::after, .ugp-nav-link.active::after {
+    width: 60%;
+}
+
+/* Botones de Acción UGP */
+.btn-ugp-gold {
+    background: linear-gradient(135deg, #D4AF37 0%, #F3C644 100%);
+    color: #000000 !important;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 4px;
+    padding: 0.6rem 1.4rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--ugp-gold-glow);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-ugp-gold:hover {
+    background: linear-gradient(135deg, #F3C644 0%, #D4AF37 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.55);
+}
+
+.btn-ugp-outline {
+    background: transparent;
+    color: var(--text-white) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    padding: 0.6rem 1.4rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-ugp-outline:hover {
+    border-color: var(--ugp-gold);
+    color: var(--ugp-gold) !important;
+    box-shadow: 0 0 12px var(--ugp-gold-glow);
+    transform: translateY(-2px);
+}
+
+.btn-ugp-red {
+    background: linear-gradient(135deg, #C8102E 0%, #E01235 100%);
+    color: #FFFFFF !important;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 4px;
+    padding: 0.6rem 1.4rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--ugp-red-glow);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-ugp-red:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(200, 16, 46, 0.6);
+}
+
+/* Badges Deportivos */
+.ugp-badge-gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--ugp-gold);
+    border: 1px solid var(--ugp-gold);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ugp-badge-red {
+    background: rgba(200, 16, 46, 0.2);
+    color: #FF5A70;
+    border: 1px solid var(--ugp-red);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.ugp-badge-live {
+    background: var(--ugp-red);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.75; transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Tarjetas Deportivas UGP */
+.ugp-card {
+    background: var(--ugp-dark-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ugp-card:hover {
+    border-color: var(--ugp-gold);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.18);
+}
+
+/* Roster / Tarjetas de Peleadores */
+.fighter-card {
+    background: linear-gradient(180deg, #181818 0%, #0F0F0F 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.fighter-card:hover {
+    border-color: var(--ugp-gold);
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.22);
+}
+
+.fighter-image-wrap {
+    width: 100%;
+    height: 320px;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+}
+
+.fighter-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    transition: transform 0.5s ease;
+}
+
+.fighter-card:hover .fighter-image-wrap img {
+    transform: scale(1.06);
+}
+
+.fighter-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    background: linear-gradient(to top, #0F0F0F 10%, transparent 100%);
+}
+
+.fighter-body {
+    padding: 1.2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.fighter-name {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-white);
+    margin-bottom: 2px;
+}
+
+.fighter-nickname {
+    color: var(--ugp-gold);
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.fighter-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 8px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.fighter-record {
+    color: var(--ugp-gold);
+    font-weight: bold;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+}
+
+/* Hero Section */
+.ugp-hero-section {
+    position: relative;
+    padding: 140px 0 90px 0;
+    background: radial-gradient(circle at 60% 40%, rgba(212, 175, 55, 0.08) 0%, rgba(11, 11, 11, 0.95) 70%), url('/images/hero-bg.jpg') center/cover no-repeat;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-gold);
+}
+
+.ugp-hero-title {
+    font-size: clamp(2.8rem, 6vw, 4.8rem);
+    line-height: 1.02;
+    color: var(--text-white);
+    margin-bottom: 1.2rem;
+}
+
+.ugp-hero-title span.gold {
+    color: var(--ugp-gold);
+    text-shadow: 0 0 25px var(--ugp-gold-glow);
+}
+
+.ugp-hero-desc {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.ugp-stats-strip {
+    display: flex;
+    gap: 35px;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 2rem;
+}
+
+.ugp-stat-item .num {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--ugp-gold);
+    line-height: 1;
+}
+
+.ugp-stat-item .lbl {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Event Cards */
+.event-card {
+    background: var(--ugp-dark-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-card:hover {
+    border-color: var(--ugp-gold);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+}
+
+.event-card-img {
+    height: 200px;
+    width: 100%;
+    object-fit: cover;
+    background: #111;
+}
+
+.event-card-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Sponsors Wall */
+.sponsor-logo-item {
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: grayscale(100%) opacity(0.5);
+    transition: all 0.3s ease;
+}
+
+.sponsor-logo-item:hover {
+    filter: grayscale(0%) opacity(1);
+    transform: scale(1.08);
+}
+
+.sponsor-logo-item img {
+    max-height: 55px;
+    max-width: 140px;
+    object-fit: contain;
+}
+
+/* Testimonios / Experiencias */
+.review-card {
+    background: var(--ugp-dark-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.review-card:hover {
+    border-color: var(--ugp-gold);
+}
+
+.review-stars {
+    color: var(--ugp-gold);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Footer UGP */
+.ugp-footer {
+    background: #070707;
+    border-top: 1px solid var(--border-gold);
+    padding: 70px 0 30px 0;
+    color: var(--text-muted);
+}
+
+.ugp-footer h5 {
+    color: var(--ugp-gold);
+    font-family: var(--font-heading);
+    letter-spacing: 1.5px;
+    margin-bottom: 1.2rem;
+}
+
+.ugp-footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.ugp-footer a:hover {
+    color: var(--ugp-gold);
+}
+
+.ugp-social-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--ugp-dark-3);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-white);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.ugp-social-btn:hover {
+    background: var(--ugp-gold);
+    color: #000 !important;
+    transform: translateY(-3px);
+}
+
+/* ==========================================================================
+   Checkout & Order Summary Responsiveness Styles
+   ========================================================================== */
+.order-summary-card,
+.summary-detail-item {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.summary-detail-item * {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.order-summary-card code {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+}

@@ -1,0 +1,4 @@
+/* Scoped overrides for UGP Top Navbar */
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 0.15rem rgba(212, 175, 55, 0.5);
+}

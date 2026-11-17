@@ -53,6 +53,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        ReservasMapping.Configure(modelBuilder);
 
         // Secuencia nativa para folios de tickets en SQL Server (concurrencia segura)
         modelBuilder.HasSequence<long>("seq_ticket_codigo")

@@ -1,0 +1,26 @@
+@page "/administracion/eventos"
+@inherits CatalogPageBase
+<PageTitle>Eventos — Administración UGP</PageTitle>
+<section class="admin-page">
+    <header class="page-heading"><div><span class="eyebrow">Cartelera / Gestión</span><h1>Eventos</h1><p>Fechas, localidades y disponibilidad en un solo lugar.</p></div><a class="btn btn-warning" href="/administracion/eventos/nuevo">+ Crear evento</a></header>
+    <div class="breadcrumb-links"><a href="/administracion">Resumen</a><a href="/administracion/localidades">Catálogo de localidades</a></div>
+    @if(Error is not null) { <p role="alert">@Error</p> }
+    @if(Ready && Rows.Count==0) { <div class="empty-state" role="status"><h2>No hay eventos registrados</h2><p>Crea un evento para empezar a organizar la cartelera.</p></div> }
+    <div class="panel-title"><h2>Tu cartelera <span class="badge-state">@Rows.Count registros</span></h2><p>Hasta 200 eventos · Ordenados por fecha</p></div>
+    <div class="catalog-grid">
+        @foreach(var e in Rows)
+        {
+            <article class="catalog-card">
+                <div class="card-top"><span class="record-id">EVENTO #@e.EventoId</span><span class="badge-state">@e.EstadoEvento</span></div>
+                <h2><a href="@($"/administracion/eventos/{e.EventoId}")">@e.Nombre</a></h2>
+                <p>@e.Fecha.ToString("dd/MM/yyyy") · @e.Hora.ToString("HH:mm")</p>
+                <dl class="card-facts"><div><dt>Aforo total</dt><dd>@e.CapacidadMaxima</dd></div><div><dt>Saldo disponible</dt><dd>@e.TicketsDisponibles</dd></div></dl>
+                <div class="card-actions"><a href="@($"/administracion/eventos/{e.EventoId}")">Editar evento →</a><a href="@($"/eventos/{e.EventoId}")">Ver página pública ↗</a></div>
+            </article>
+        }
+    </div>
+</section>
+@code {
+    private List<Evento> Rows=[];
+    protected override Task OnInitializedAsync()=>Initialize(async ()=>Rows=await Catalog.EventsAsync(User));
+}

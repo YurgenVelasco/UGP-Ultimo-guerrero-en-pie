@@ -1,0 +1,71 @@
+@page "/administracion/eventos/nuevo"
+@page "/administracion/eventos/{EventoId:int}"
+@inherits CatalogPageBase
+<PageTitle>Evento — Administración UGP</PageTitle>
+<section class="admin-page">
+    <header class="page-heading"><div><span class="eyebrow">Cartelera / @(EventoId==0 ? "Nuevo evento" : "Evento #"+EventoId)</span><h1>@(EventoId==0 ? "Crear evento" : "Detalle y edición de evento")</h1><p>Define la información del encuentro y consulta sus localidades.</p></div></header>
+    <div class="breadcrumb-links"><a href="/administracion/eventos">Volver a eventos</a><a href="/administracion/localidades">Catálogo de localidades</a></div>
+    @if(Error is not null) { <p role="alert" class="text-warning">@Error</p> }
+    @if(Ready && Form is not null)
+    {
+        <EditForm Model="Form" FormName="evento" OnValidSubmit="SaveEvent" class="panel">
+            <div class="panel-title"><h2>Información del evento</h2><p>Fecha y hora de Colombia</p></div>
+            <DataAnnotationsValidator /><ValidationSummary />
+            <input type="hidden" name="Form.Version" value="@Form.Version" />
+            <div class="row g-3">
+                <div class="col-12 col-md-6"><label for="event-name">Nombre</label><InputText id="event-name" class="form-control" @bind-Value="Form.Nombre" maxlength="100" required /><ValidationMessage For="@(()=>Form.Nombre)" /></div>
+                <div class="col-12 col-md-6"><label for="event-place">Lugar</label><InputText id="event-place" class="form-control" @bind-Value="Form.Lugar" maxlength="200" required /><ValidationMessage For="@(()=>Form.Lugar)" /></div>
+                <div class="col-6"><label for="event-date">Fecha (Colombia)</label><InputDate ParsingErrorMessage="Introduce una fecha válida." id="event-date" class="form-control" @bind-Value="Form.Fecha" /><ValidationMessage For="@(()=>Form.Fecha)" /></div>
+                <div class="col-6"><label for="event-time">Hora (Colombia)</label><InputDate ParsingErrorMessage="Introduce una hora válida." id="event-time" class="form-control" Type="InputDateType.Time" @bind-Value="Form.Hora" /></div>
+                <div class="col-12"><label for="event-description">Descripción</label><InputTextArea id="event-description" class="form-control" @bind-Value="Form.Descripcion" maxlength="4000" /><ValidationMessage For="@(()=>Form.Descripcion)" /></div>
+                <div class="col-12"><label for="event-image">Imagen: ruta /images/ o URL HTTPS editorial UGP</label><InputText id="event-image" class="form-control" @bind-Value="Form.ImagenUrl" maxlength="255" /><ValidationMessage For="@(()=>Form.ImagenUrl)" /></div>
+                <div class="col-12 col-md-6"><label for="event-state">Estado</label><InputSelect id="event-state" class="form-select" @bind-Value="Form.Estado">@foreach(var state in AdminCatalogService.States){<option value="@state">@state</option>}</InputSelect></div>
+                <div class="col-12 col-md-6"><label for="event-capacity">Aforo total (se fija al crear)</label><InputNumber ParsingErrorMessage="Introduce un aforo válido." id="event-capacity" class="form-control" @bind-Value="Form.CapacidadMaxima" readonly="@(EventoId>0)" min="1" max="1000000" /><ValidationMessage For="@(()=>Form.CapacidadMaxima)" /></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-warning" type="submit">Guardar evento</button><a class="btn btn-outline-light" href="/administracion/eventos">Volver al listado</a></div>
+        </EditForm>
+        @if(EventoId>0)
+        {
+            <div class="panel-title"><h2>Localidades asociadas</h2><a class="btn btn-outline-light" href="@($"/eventos/{EventoId}")">Ver detalle público</a></div>
+            <p class="admin-notice">Saldo del evento: @Current?.TicketsDisponibles. Reservas y ventas se contabilizan por evento; el precio y la capacidad del tipo son globales. Los cupos no se suman por encima del saldo del evento.</p>
+            @if(Rows.Count==0) { <p class="empty-state" role="status">No hay localidades asociadas.</p> }
+            <div class="catalog-grid">
+                @foreach(var row in Rows) { <article class="catalog-card">
+                    <h3 class="h5">@row.Nombre</h3><p>Precio: @row.Precio.ToString("N2") COP · Capacidad: @row.Capacidad</p>
+                    <p>Reservados: @row.Reservados · Vendidos: @row.Vendidos · Disponibles: @row.Disponibles</p>
+                    <div class="card-actions"><a href="@($"/administracion/localidades/{row.Id}")">Consultar tipo global</a></div>
+                </article> }
+            </div>
+            <EditForm Model="Association" FormName="asociacion" OnValidSubmit="Associate" class="panel mt-4">
+                <div class="panel-title"><h2>Asociar una localidad existente</h2><p>Sin modificar el saldo de inventario</p></div>
+                <DataAnnotationsValidator /><ValidationSummary />
+                <label for="locality-select">Localidad global</label>
+                <InputSelect id="locality-select" class="form-select" @bind-Value="Association!.TipoEntradaId"><option value="0">Selecciona una localidad</option>@foreach(var t in Types){<option value="@t.Id">@t.Nombre — @t.Precio.ToString("N2") COP — @t.Capacidad cupos</option>}</InputSelect>
+                <ValidationMessage For="@(()=>Association!.TipoEntradaId)" />
+                <div class="form-actions"><button class="btn btn-warning" type="submit">Asociar sin modificar inventario</button></div>
+            </EditForm>
+        }
+    }
+</section>
+@code {
+    [Parameter] public int EventoId {get;set;}
+    [SupplyParameterFromForm(FormName="evento")] public AdminEventForm? Form {get;set;}
+    [SupplyParameterFromForm(FormName="asociacion")] public AdminAssociationForm? Association {get;set;}
+    private Evento? Current;
+    private List<AdminAvailability> Rows=[];
+    private List<AdminLocalityRow> Types=[];
+    protected override Task OnInitializedAsync()=>Initialize(async ()=>
+    {
+        Association ??= new();
+        if(EventoId==0) Form ??= new();
+        else
+        {
+            var data=await Catalog.EventAsync(User,EventoId);
+            if(data is null) { Context.Response.StatusCode=404; throw new ValidationException("Evento no encontrado."); }
+            Current=data.Value.Event; Form ??= data.Value.Form;
+            Rows=await Catalog.AvailabilityAsync(User,EventoId); Types=await Catalog.LocalitiesAsync(User);
+        }
+    });
+    private Task SaveEvent()=>Save(async ()=>"/administracion/eventos/"+await Catalog.SaveEventAsync(User,EventoId,Form!));
+    private Task Associate()=>Save(async ()=>{await Catalog.AssociateAsync(User,EventoId,Association!.TipoEntradaId);return "/administracion/eventos/"+EventoId;});
+}

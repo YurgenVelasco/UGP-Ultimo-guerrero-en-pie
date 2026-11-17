@@ -1,0 +1,170 @@
+@page "/eventos/{EventoId:int}"
+@inject ApplicationDbContext Db
+@inject ILogger<EventoDetalle> Logger
+
+<PageTitle>@(evento?.Nombre ?? "Detalle del evento") | UGP</PageTitle>
+
+<div class="container public-page">
+    <a href="/#eventos">Volver a la cartelera</a>
+
+    @if (error)
+    {
+        <header class="public-heading">
+            <h1>No pudimos cargar el evento</h1>
+            <p role="status">Intenta nuevamente más tarde.</p>
+        </header>
+    }
+    else if (evento is null)
+    {
+        <header class="public-heading">
+            <h1>Evento no encontrado</h1>
+            <p>Revisa la dirección o consulta los eventos de la cartelera.</p>
+        </header>
+    }
+    else
+    {
+        <header class="public-heading event-heading">
+            <div>
+                @if (!string.IsNullOrWhiteSpace(evento.EstadoEvento))
+                {
+                    <p class="public-eyebrow">@evento.EstadoEvento</p>
+                }
+                <h1>@evento.Nombre</h1>
+                <p><time datetime="@evento.Fecha.ToString("yyyy-MM-dd")">@evento.Fecha.ToString("dd MMMM yyyy", CulturaCop)</time> · @evento.Hora.ToString("h:mm tt", CulturaCop)</p>
+                @if (!string.IsNullOrWhiteSpace(evento.Lugar))
+                {
+                    <p>@evento.Lugar</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(evento.Descripcion))
+                {
+                    <p class="event-description">@evento.Descripcion</p>
+                }
+                @if (localidades.Count > 0)
+                {
+                    <a class="public-action" href="@($"/checkout/{evento.EventoId}")">Comprar entradas</a>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(evento.ImagenUrl))
+            {
+                <img class="event-banner" src="@evento.ImagenUrl" alt="" />
+            }
+        </header>
+
+        <section class="public-section" aria-labelledby="localidades-title">
+            <h2 id="localidades-title">Localidades</h2>
+            @if (localidades.Count == 0)
+            {
+                <p class="public-card">Por ahora no hay entradas disponibles para este evento.</p>
+            }
+            else
+            {
+                <div class="public-grid">
+                    @foreach (var localidad in localidades)
+                    {
+                        var cupos = Math.Min(evento.TicketsDisponibles, localidad.Cupos);
+                        <article class="public-card">
+                            <h3>@localidad.Nombre</h3>
+                            <p>@localidad.Precio.ToString("C", CulturaCop) COP</p>
+                            <p>@(cupos == 1 ? "1 entrada disponible" : $"{cupos} entradas disponibles")</p>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="public-section" aria-labelledby="combates-title">
+            <h2 id="combates-title">Combates</h2>
+            @if (combates.Count == 0)
+            {
+                <p class="public-card">Todavía no hay combates registrados para este evento.</p>
+            }
+            else
+            {
+                <div class="public-grid">
+                    @foreach (var combate in combates)
+                    {
+                        <article class="public-card">
+                            <h3 class="event-match">
+                                @combate.PeleadorRojo.Nombre <span>vs.</span> @combate.PeleadorAzul.Nombre
+                            </h3>
+                            @if (!string.IsNullOrWhiteSpace(combate.TipoCombate))
+                            {
+                                <p>@combate.TipoCombate</p>
+                            }
+                            @if (combate.Rounds is int rondas)
+                            {
+                                <p>@(rondas == 1 ? "1 ronda" : $"{rondas} rondas")</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(combate.Resultado))
+                            {
+                                <p>@combate.Resultado</p>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo CulturaCop = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    [Parameter]
+    public int EventoId { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private Evento? evento;
+    private List<LocalidadPublica> localidades = [];
+    private List<Combate> combates = [];
+    private bool error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        evento = null;
+        localidades = [];
+        combates = [];
+        error = false;
+
+        try
+        {
+            if (EventoId > 0)
+            {
+                evento = await Db.Eventos.AsNoTracking().FirstOrDefaultAsync(e => e.EventoId == EventoId);
+            }
+
+            if (evento is null)
+            {
+                if (HttpContext?.Response is { HasStarted: false } response)
+                {
+                    response.StatusCode = StatusCodes.Status404NotFound;
+                }
+
+                return;
+            }
+
+            if (VentaEventoPublica.Habilitada(evento))
+            {
+                localidades = await VentaEventoPublica.LocalidadesDisponibles(Db)
+                    .Where(l => l.EventoId == EventoId)
+                    .OrderBy(l => l.Precio)
+                    .ThenBy(l => l.TipoEntradaId)
+                    .ToListAsync();
+            }
+
+            combates = await Db.Combates.AsNoTracking()
+                .Where(c => c.EventoId == EventoId)
+                .Include(c => c.PeleadorRojo)
+                .Include(c => c.PeleadorAzul)
+                .OrderBy(c => c.CombateId)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "No se pudo cargar el detalle público del evento {EventoId}.", EventoId);
+            error = true;
+        }
+    }
+}

@@ -1,0 +1,101 @@
+@namespace UGP_ultimo_guerrero_en_pie_.Components.Multimedia
+@inject IServiceScopeFactory ScopeFactory
+@inject ILogger<MultimediaGallery> Logger
+
+<section id="galeria" class="multimedia-gallery" aria-labelledby="gallery-title">
+    <div class="container">
+        <h2 id="gallery-title">@(Header?.Titulo ?? "Galería multimedia")</h2>
+        @if (Loading)
+        {
+            <p role="status">Cargando galería…</p>
+        }
+        else if (Error)
+        {
+            <p role="alert">No pudimos cargar la galería. Intenta más tarde.</p>
+            <button type="button" @onclick="Load">Reintentar</button>
+        }
+        else
+        {
+            @if (Header is not null)
+            {
+                <p>@Header.Subtitulo</p><p>@Header.Descripcion</p>
+            }
+            @if (Groups.Count == 0)
+            {
+                <p role="status">@(InvalidCount > 0 ? "Los recursos publicados no están disponibles en un formato permitido." : "Aún no hay contenido multimedia publicado.")</p>
+            }
+            else
+            {
+                @if (InvalidCount > 0) { <p role="status">Algunos recursos no están disponibles.</p> }
+                <div class="gallery-grid">
+                    @foreach (var group in Groups)
+                    {
+                        <div @key="group.Key">
+                            <p>@group.Subtitle</p><p>@group.Description</p>
+                            <GalleryCarousel Title="@group.Title" Items="group.Items" />
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    private bool Loading = true, Error;
+    private int InvalidCount;
+    private SeccionExperiencia? Header;
+    private readonly List<MediaGroup> Groups = [];
+    protected override Task OnInitializedAsync() => Load();
+    private async Task Load()
+    {
+        Loading = true; Error = false; Header = null; Groups.Clear(); InvalidCount = 0;
+        try
+        {
+            // Contexto propio: Home también carga consultas asincrónicas en su contexto scoped.
+            using var scope = ScopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Header = await db.SeccionesExperiencia.AsNoTracking().Where(s => s.Activo)
+                .OrderBy(s => s.SeccionExperienciaId).FirstOrDefaultAsync();
+            var sections = await db.SeccionesMultimedia.AsNoTracking().Where(s => s.Activo)
+                .OrderBy(s => s.Orden).ThenBy(s => s.SeccionMultimediaId).ToListAsync();
+            var items = await db.ExperienciaMultimediaItems.AsNoTracking().Where(i => i.Activo)
+                .OrderBy(i => i.CarruselNumero).ThenBy(i => i.Orden).ThenBy(i => i.ExperienciaMultimediaItemId).ToListAsync();
+            foreach (var section in sections)
+            {
+                var media = new List<GalleryMedia>();
+                foreach (var raw in new[] { section.VideoPrincipalUrl, section.VideoSecundarioUrl })
+                {
+                    if (string.IsNullOrWhiteSpace(raw)) continue;
+                    Add(media, raw, section.Titulo, true);
+                }
+                if (media.Count > 0) Groups.Add(new($"section-{section.SeccionMultimediaId}", section.Titulo, section.Subtitulo, section.Descripcion, media));
+            }
+            // CarruselNumero no es una FK a SeccionMultimedia: no inventar esa relación.
+            foreach (var group in items.GroupBy(i => i.CarruselNumero))
+            {
+                var media = new List<GalleryMedia>();
+                foreach (var item in group)
+                {
+                    if (item.Tipo is not (ExperienciaMultimediaItemTipo.Imagen or ExperienciaMultimediaItemTipo.VideoYouTube)) { InvalidCount++; continue; }
+                    Add(media, item.Url, item.Titulo, item.Tipo == ExperienciaMultimediaItemTipo.VideoYouTube);
+                }
+                if (media.Count > 0) Groups.Add(new($"carousel-{group.Key}", $"Galería {group.Key}", null, null, media));
+            }
+            if (InvalidCount > 0) Logger.LogWarning("Galería: {Count} recursos omitidos por formato u origen no permitido.", InvalidCount);
+        }
+        catch (Exception ex)
+        {
+            Error = true; Groups.Clear(); Header = null;
+            Logger.LogError("Galería: fallo de consulta ({Type}).", ex.GetType().Name);
+        }
+        finally { Loading = false; }
+    }
+    private void Add(List<GalleryMedia> list, string raw, string? title, bool video)
+    {
+        var url = video ? MediaUrl.YouTube(raw) : MediaUrl.Image(raw);
+        if (url is null) { InvalidCount++; return; }
+        list.Add(new(url, string.IsNullOrWhiteSpace(title) ? (video ? "Video de UGP" : "Imagen de la galería UGP") : title, video));
+    }
+    private sealed record MediaGroup(string Key, string Title, string? Subtitle, string? Description, List<GalleryMedia> Items);
+}

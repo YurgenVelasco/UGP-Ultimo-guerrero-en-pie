@@ -1,0 +1,92 @@
+@page "/peleadores"
+@inject ApplicationDbContext Db
+@inject ILogger<Peleadores> Logger
+
+<PageTitle>Peleadores | UGP</PageTitle>
+
+<div class="container public-page">
+    <header class="public-heading">
+        <p class="public-eyebrow">Último Guerrero en Pie</p>
+        <h1>Directorio de <span>peleadores</span></h1>
+    </header>
+
+    @if (cargando)
+    {
+        <p class="public-card" role="status">Cargando el directorio…</p>
+    }
+    else if (error)
+    {
+        <p class="public-card" role="status">No pudimos cargar el directorio. Intenta nuevamente más tarde.</p>
+    }
+    else if (peleadores.Count == 0)
+    {
+        <p class="public-card" role="status">Por ahora no hay peleadores registrados en el directorio.</p>
+    }
+    else
+    {
+        <div class="public-grid">
+            @foreach (var peleador in peleadores)
+            {
+                <article class="public-card fighter-card">
+                    @if (!string.IsNullOrWhiteSpace(peleador.FotoUrl))
+                    {
+                        <img src="@peleador.FotoUrl" alt="" loading="lazy" />
+                    }
+                    <div class="fighter-body">
+                        <h2>@peleador.Nombre</h2>
+                        @if (!string.IsNullOrWhiteSpace(peleador.Apodo))
+                        {
+                            <p class="public-eyebrow">@peleador.Apodo</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(peleador.Nacionalidad))
+                        {
+                            <p>@peleador.Nacionalidad</p>
+                        }
+                        @if (peleador.Peso is decimal peso)
+                        {
+                            <p>@peso.ToString("0.##") kg</p>
+                        }
+                        @if (peleador.PeleasGanadas is int ganadas)
+                        {
+                            <p>Victorias: @ganadas</p>
+                        }
+                        @if (peleador.PeleasPerdidas is int perdidas)
+                        {
+                            <p>Derrotas: @perdidas</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(peleador.Descripcion))
+                        {
+                            <p>@peleador.Descripcion</p>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Peleador> peleadores = [];
+    private bool cargando = true;
+    private bool error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            peleadores = await Db.Peleadores.AsNoTracking()
+                .OrderBy(p => p.Nombre)
+                .ThenBy(p => p.PeleadorId)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "No se pudo cargar el directorio público de peleadores.");
+            error = true;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

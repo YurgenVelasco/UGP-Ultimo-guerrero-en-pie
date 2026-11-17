@@ -336,7 +336,7 @@ h1, h2, h3, h4, h5, h6, .ugp-title {
 .ugp-hero-section {
     position: relative;
     padding: 140px 0 90px 0;
-    background: radial-gradient(circle at 60% 40%, rgba(212, 175, 55, 0.08) 0%, rgba(11, 11, 11, 0.95) 70%), url('/images/hero-bg.jpg') center/cover no-repeat;
+    background: radial-gradient(circle at 60% 40%, rgba(212, 175, 55, 0.08) 0%, rgba(11, 11, 11, 0.95) 70%);
     overflow: hidden;
     border-bottom: 1px solid var(--border-gold);
 }

@@ -17,7 +17,7 @@
   El servicio [`TicketService`](file:///c:/Users/Yurgen%20Velasco/source/repos/UGP(ultimo%20guerrero%20en%20pie)/UGP(ultimo%20guerrero%20en%20pie)/Services/Implementations/TicketService.cs) consume esta secuencia de forma atómica a través de `SELECT NEXT VALUE FOR seq_ticket_codigo;`, garantizando la unicidad absoluta de los folios en alta concurrencia.
 
 ### 1.2 Validación Criptográfica contra Falsificación
-* **Firma Digital HMAC-SHA256:** Cada boleto genera un token hash criptográfico firmado con clave secreta (`TicketSecurity:SecretKey`) e emisor (`TicketSecurity:Issuer`) configurados en [`appsettings.json`](file:///c:/Users/Yurgen%20Velasco/source/repos/UGP(ultimo%20guerrero%20en%20pie)/UGP(ultimo%20guerrero%20en%20pie)/appsettings.json).
+* **Firma Digital HMAC-SHA256:** Cada boleto incluye una firma calculada con la clave privada de configuración y el emisor público. Véase [Configuración privada y rotación QR](#configuración-privada-y-rotación-qr).
 * **Payload Seguro del QR:** Formato estructurado `UGP|{CodigoUnico}|{EventoId}|{Folio}|{TokenHash}`.
 * **Protección contra Timing Attacks:** En [`QrService.cs`](file:///c:/Users/Yurgen%20Velasco/source/repos/UGP(ultimo%20guerrero%20en%20pie)/UGP(ultimo%20guerrero%20en%20pie)/Services/Implementations/QrService.cs), la comparación de hashes se realiza mediante `CryptographicOperations.FixedTimeEquals`, evitando ataques de canal lateral por análisis de tiempo de respuesta.
 
@@ -146,8 +146,6 @@ Implementado en [`Services/Implementations/CompraService.cs`](file:///c:/Users/Y
   "Wompi": {
     "CheckoutVposUrl": "https://checkout.wompi.co/l/VPOS_YBhj5S",
     "PublicKey": "pub_test_X0zDA9xoKdePuotSdPUxggaGLxDsq4Yt",
-    "EventsSecret": "test_events_SecretKeyWompi2026!",
-    "IntegritySecret": "test_integrity_SecretKeyWompi2026!",
     "Currency": "COP",
     "RedirectUrl": "http://localhost:5145/checkout/confirmacion"
   }
@@ -240,8 +238,6 @@ Implementado en [`Services/Implementations/CompraService.cs`](file:///c:/Users/Y
   "Wompi": {
     "CheckoutUrl": "https://checkout.wompi.co/p/",
     "PublicKey": "pub_test_X0zDA9xoKdePuotSdPUxggaGLxDsq4Yt",
-    "EventsSecret": "test_events_SecretKeyWompi2026!",
-    "IntegritySecret": "test_integrity_SecretKeyWompi2026!",
     "Currency": "COP",
     "RedirectUrl": "http://localhost:5145/checkout/confirmacion"
   }
@@ -322,9 +318,56 @@ Implementado en [`Services/Implementations/CompraService.cs`](file:///c:/Users/Y
 ### 13.3 Conexión Reactiva en `Checkout.razor`
 * En [`Components/Pages/Checkout.razor`](file:///c:/Users/Yurgen%20Velasco/source/repos/UGP(ultimo%20guerrero%20en%20pie)/UGP(ultimo%20guerrero%20en%20pie)/Components/Pages/Checkout.razor), el botón *"PAGAR CON WOMPI"* ejecuta `RedirigirAWompiConPrecio()`, el cual registra la compra pendiente y redirige inmediatamente a `/pagos/wompi/{compraId}`.
 
+## Configuración privada y rotación QR
 
+El proyecto carga User Secrets en el entorno Development. Configura TicketSecurity:SecretKey y Wompi:IntegritySecret en el perfil local. En el despliegue, inyecta TicketSecurity__SecretKey y Wompi__IntegritySecret desde el gestor de secretos. La llave pública de Wompi se configura en Wompi:PublicKey y el navegador recibe la firma derivada, mientras el secreto de integridad se usa en el servidor. Wompi:EventsSecret, o Wompi__EventsSecret en despliegue, se reserva para el futuro consumidor de eventos. El flujo actual carece de un webhook que lo utilice.
 
+Antes de desplegar este cambio, identifica y configura por el canal privado la clave efectiva y el emisor que usaba cada entorno. Esto conserva el formato y las firmas de los boletos existentes. La clave presente en Git se considera expuesta. La rotación requiere inventariar primero los boletos vigentes con una consulta autorizada de solo lectura y comprobar qué clave y emisor los firmaron.
 
+Si hay boletos vigentes con la clave expuesta, habilita la transición antes del cambio de clave. Firma únicamente las nuevas emisiones con la clave nueva y una versión identificable. Durante un plazo definido, valida los QR antiguos solo contra un boleto preexistente y elegible, comprobando que el folio, el evento y la firma coincidan con los datos persistidos de esa emisión. Mantén el secreto anterior fuera de Git si algún entorno lo necesita temporalmente. Prueba boletos vigentes, usados y manipulados antes de retirar la compatibilidad. Este cambio conserva las firmas de los boletos ya emitidos.
 
+El .gitignore y la retirada de archivos del índice impiden nuevas incorporaciones de esos artefactos. El commit anterior conserva sus copias.
 
+## [2026-11-07] - Checkout Wompi Sandbox y verificación de pagos
 
+- El widget abre al pulsar el botón y recibe las opciones en JSON. Los datos del comprador dejaron de interpolarse en JavaScript, lo que evita el error de sintaxis que causaban nombres con apóstrofos. La pantalla ofrece Web Checkout para la misma orden pendiente.
+- La confirmación consulta a Wompi desde el servidor con `Wompi:PrivateKey` y coteja el ID, la referencia, el importe, la moneda y el estado `APPROVED` antes de emitir boletos. La aprobación y el registro de boletos comparten una transacción SQL. Se retiró la aprobación simulada y el retorno del navegador solo permite solicitar la verificación.
+- En Sandbox, la misma orden devolvió HTTP 403 de CloudFront con el retorno a HTTPS localhost y HTTP 200 al omitirlo. En `Development`, si el retorno apunta a `localhost` o `127.0.0.1`, la pasarela omite el parámetro en ambos checkouts. El widget mantiene su callback local para pasar el ID de transacción a la pantalla de confirmación. Los retornos HTTPS públicos conservan su configuración.
+- La compilación finalizó con cero errores y advertencias. Pasaron la comprobación de sintaxis JavaScript y `git diff --check`. El HTTP 200 corresponde a la solicitud de apertura. Sigue pendiente comprobar en navegador que se muestren los medios de pago Sandbox y que cerrar el checkout deje la orden pendiente y sin boletos activos.
+
+## Etapa 1A — Validación de formularios
+
+- La compra valida los datos del comprador y de cada asistente con las mismas reglas en Blazor y en el servicio. Los errores se muestran junto a los campos y el formulario conserva los datos al volver a corregirlos.
+- El servidor exige el evento y la localidad seleccionados, calcula el precio desde la base de datos y comprueba el aforo general y las reservas de esa localidad antes de crear una orden pendiente.
+- La búsqueda de comprobantes y la consulta por código o QR limitan la entrada antes de consultar la base de datos. El lector QR comprueba también el formato y el evento indicado en el código.
+
+## Etapa 1C — Acceso a compras de invitados
+
+- Al registrar la orden, Blazor entrega al mismo sitio una credencial de activación protegida, válida durante cinco minutos y ligada a la cookie del navegador original. El servidor activa una cookie por compra de 30 días, con HttpOnly, SameSite=Lax y Secure en HTTPS. La referencia y el ID de Wompi permiten localizar la orden y la transacción, respectivamente.
+- La pasarela, la confirmación, los PDF y las imágenes QR verifican el permiso sobre la compra. Las descargas y los QR requieren además el pago aprobado. Los QR se regeneran a partir del contenido guardado y se bloquea la ruta estática anterior.
+- En Windows, Data Protection conserva sus claves en el perfil de la cuenta que ejecuta UGP y las protege con DPAPI. El reinicio debe usar la misma cuenta y ubicación de la aplicación. En otros despliegues se debe validar la persistencia y protección del almacén de claves antes de ofrecer acceso duradero.
+- Las compras anteriores carecen de la cookie de acceso. Recuperar entradas desde otro navegador o tras perder la cookie requiere un flujo futuro que verifique el correo asociado a la orden. Saber el correo, el folio o la referencia no concede acceso.
+
+## Etapa 1D — Privacidad del comprador y del QR
+
+- El checkout crea el visitante cuando el correo es nuevo. Si el correo ya existe, reutiliza su ID sin cambiar nombre ni teléfono. Los comprobantes dejan de mostrar el nombre del perfil compartido. Si faltan datos de un asistente en la orden, el boleto usa un nombre genérico y omite el teléfono del perfil.
+- La verificación pública exige el QR completo de un boleto vinculado a una compra aprobada. Comprueba el contenido persistido y la firma y devuelve solo un resultado de autenticidad. Un folio, un QR alterado y un QR desconocido reciben el mismo mensaje genérico. La consulta no registra el ingreso.
+- La futura operación de ingreso debe estar separada de la consulta pública, exigir autorización de operador para el evento y cambiar el estado de Activo a Usado en una actualización condicional que solo pueda ganar una solicitud.
+
+El modelo actual conserva la relación `Compras.VisitanteId`. El nombre y teléfono ingresados por un comprador recurrente no quedan guardados como datos propios de su nueva orden. Para conservarlos, una etapa posterior puede aprobar las siguientes columnas y escribirlas al crear la compra. Los comprobantes deberán leer de la orden y los valores históricos deben quedar vacíos salvo que exista una fuente verificable para completarlos.
+
+```sql
+-- Propuesta para una etapa posterior. No ejecutada.
+ALTER TABLE dbo.Compras ADD
+    comprador_nombre nvarchar(100) NULL,
+    comprador_correo nvarchar(150) NULL,
+    comprador_telefono nvarchar(30) NULL;
+```
+
+## Reservas e inventario — implementación pendiente de validación SQL (2026-11-10)
+
+- D-01/D-02 implementadas en código: reserva UTC de 15 minutos, intento de pago persistido, bandeja autenticada de Wompi, liberación/confirmación con bloqueo transaccional por evento y conciliación de cobros tardíos sin emisión automática.
+- Scripts UGP_0002 y plantilla UGP_0003 preparados, no aplicados. Baseline intacto. Eliminado el arranque con migraciones/siembra automática.
+- Activación `Reservas:Habilitadas` deshabilitada por defecto; checkout en mantenimiento hasta revisar esquema, adopción histórica y webhook. No se modificaron secretos.
+- Asistentes de reservas nuevas persistidos hasta emisión/liberación para tolerar reinicios. No modifica el perfil compartido del visitante.
+- Compilación y 10 pruebas aisladas correctas. Pruebas de concurrencia/idempotencia SQL y HTTP Sandbox pendientes; Entrega 3 no aprobada. Detalles en `Correccion-Inventario-Reservas-UGP.md`.

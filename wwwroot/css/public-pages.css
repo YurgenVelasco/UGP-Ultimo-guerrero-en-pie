@@ -1,0 +1,146 @@
+.public-page {
+    --public-gold: #c9a84c;
+    --public-paper: #f8f6f0;
+    padding-block: clamp(2rem, 6vw, 5rem);
+    overflow-wrap: anywhere;
+}
+
+.public-heading {
+    max-width: 55rem;
+    margin-bottom: clamp(1.75rem, 4vw, 3rem);
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #594a2c;
+}
+
+.public-heading h1 {
+    margin-block: .4rem .75rem;
+    color: var(--public-paper);
+    font: 800 clamp(2.5rem, 7vw, 6rem)/.95 "Barlow Condensed", sans-serif;
+    text-transform: uppercase;
+}
+
+.public-heading h1 span,
+.public-eyebrow {
+    color: var(--public-gold);
+}
+
+.public-eyebrow {
+    margin-bottom: .5rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.public-section + .public-section {
+    margin-top: 2rem;
+}
+
+.public-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 1rem;
+}
+
+.public-card {
+    min-width: 0;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    border: 1px solid #594a2c;
+    border-radius: .75rem;
+    background: #15120c;
+    color: var(--public-paper);
+}
+
+.public-card h2,
+.public-card h3 {
+    color: var(--public-paper);
+}
+
+.public-card a,
+.public-social a {
+    color: var(--public-gold);
+    text-underline-offset: .2em;
+}
+
+.fighter-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.fighter-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    object-position: center 25%;
+}
+
+.fighter-body {
+    padding: 1.25rem;
+}
+
+.fighter-body p {
+    margin-bottom: .45rem;
+}
+
+.public-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    padding: 0;
+    list-style: none;
+}
+
+.public-social a {
+    display: block;
+    padding: .6rem .85rem;
+    border: 1px solid #594a2c;
+    border-radius: .35rem;
+}
+
+.faq-content {
+    max-width: 52rem;
+}
+
+.faq-search {
+    max-width: 28rem;
+    margin-top: .4rem;
+}
+
+.faq-count {
+    margin-block: .85rem;
+}
+
+.faq-item + .faq-item {
+    margin-top: .6rem;
+}
+
+.faq-item summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.faq-item summary::marker {
+    color: var(--public-gold);
+}
+
+.faq-item[open] summary {
+    margin-bottom: .75rem;
+}
+
+.faq-pending {
+    margin-top: 1.5rem;
+}
+
+.public-action {
+    display: inline-block;
+    padding: .65rem 1rem;
+    border-radius: .3rem;
+    background: var(--public-gold);
+    color: #0a0a0a;
+    font-weight: 700;
+}
+
+.public-page :is(a, input, summary):focus-visible {
+    outline: 2px solid var(--public-paper);
+    outline-offset: 3px;
+}

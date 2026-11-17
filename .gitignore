@@ -1,0 +1,67 @@
+# Visual Studio, VS Code y Rider
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.rsuser
+*.sln.docstates
+*.sln.iml
+
+# Compilacion, publicacion, pruebas y diagnostico de .NET
+[Bb]in/
+[Oo]bj/
+/artifacts/
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.trx
+*.coverage
+*.coveragexml
+*.binlog
+*.pubxml.user
+*.publishsettings
+*.log
+*.tmp
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+
+# Configuracion y credenciales locales
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+appsettings.*.local.json
+appsettings.local.json
+secrets.json
+secrets.local.json
+credentials.local.json
+*.local.runsettings
+
+# Certificados con claves, claves privadas y Data Protection
+*.pfx
+*.p12
+*.p8
+*.key
+*.snk
+# Un PEM puede contener una clave privada. Revisar antes de incluir certificados publicos.
+*.pem
+ASP.NET/DataProtection-Keys/
+DataProtection-Keys/
+
+# Copias y archivos locales de bases de datos
+*.bak
+*.mdf
+*.ndf
+*.ldf
+*.bacpac
+*.dacpac
+*.trn
+*.bkp
+*.dump
+*.sql.bak
+
+# Codigos QR de boletos generados en ejecucion
+/wwwroot/uploads/qr/

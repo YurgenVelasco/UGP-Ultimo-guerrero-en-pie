@@ -2,99 +2,84 @@
 @rendermode InteractiveServer
 @inject ApplicationDbContext Db
 @inject ITicketService TicketService
+@inject ILogger<Home> Logger
 
 <PageTitle>UGP - Ultimate Grappling Promotion | MMA & Combat Sports</PageTitle>
 
-<!-- ======================================================================
-     HERO SECTION: EVENTO PRINCIPAL
-     ====================================================================== -->
-<section class="ugp-hero-section">
-    <div class="container">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-7">
-                <div class="d-inline-flex align-items-center gap-2 ugp-badge-gold mb-3">
-                    <i class="bi bi-lightning-fill text-warning"></i>
-                    <span>EVENTO ESTELAR DE CAMPEONATO</span>
+<section class="site-hero" aria-labelledby="site-hero-title">
+    <picture>
+        <source media="(max-width: 767px)" srcset="images/ugp/portada-movil.jpg" />
+        <img class="site-hero-image" src="images/ugp/portada-escritorio.jpg" alt="" fetchpriority="high" />
+    </picture>
+
+    <div class="container site-hero-content">
+        <p class="hero-brand">Último Guerrero en Pie</p>
+        <h1 id="site-hero-title"><span>Próximos</span> eventos</h1>
+        <p class="hero-intro">Artes marciales mixtas en Colombia</p>
+
+        @if (CargandoEventos)
+        {
+            <p class="hero-message" role="status">Cargando eventos…</p>
+        }
+        else if (Destacados.Count == 0)
+        {
+            <p class="hero-message" role="status">@(ErrorEventos
+                ? "No pudimos cargar los eventos. Intenta nuevamente más tarde."
+                : "Por ahora no hay eventos con entradas disponibles.")</p>
+        }
+        else
+        {
+            <div role="region" aria-roledescription="carrusel" aria-label="Eventos con entradas disponibles">
+                <div id="portada-eventos" class="hero-cards">
+                    @for (var i = 0; i < Math.Min(Destacados.Count, 3); i++)
+                    {
+                        var destacado = Destacados[(Diapositiva + i) % Destacados.Count];
+                        var evento = destacado.Evento;
+                        <article @key="evento.EventoId" class="hero-card @(i == 0 ? "hero-card-active" : "hero-card-preview")">
+                            <span class="hero-badge">@evento.EstadoEvento</span>
+                            <h2><a class="text-reset" href="@($"/eventos/{evento.EventoId}")">@evento.Nombre</a></h2>
+                            <p><i class="bi bi-calendar3" aria-hidden="true"></i> @evento.Fecha.ToString("dd MMM yyyy") · @evento.Hora.ToString("hh:mm tt")</p>
+                            <p><i class="bi bi-geo-alt" aria-hidden="true"></i> @evento.Lugar</p>
+                            <p>Desde @destacado.PrecioDesde!.Value.ToString("C", CulturaCop) COP</p>
+                            <a class="hero-purchase" href="@($"/checkout/{evento.EventoId}")" aria-label="@($"Comprar entradas para {evento.Nombre}")">Comprar entradas</a>
+                        </article>
+                    }
                 </div>
 
-                <h1 class="ugp-hero-title">
-                    @(EventoEstelar?.Nombre ?? "UGP 05: GUERRA EN LA JAULA")
-                    <br /><span class="gold">TITULARES DEL CINTURÓN</span>
-                </h1>
-
-                <div class="d-flex flex-wrap align-items-center gap-3 my-3 text-secondary">
-                    <span class="badge bg-danger text-uppercase px-3 py-2 fw-bold" style="font-size: 0.85rem;">
-                        <i class="bi bi-broadcast me-1"></i> EN VIVO
-                    </span>
-                    <span class="d-flex align-items-center gap-1">
-                        <i class="bi bi-calendar-event text-warning"></i>
-                        <strong class="text-white">@(EventoEstelar != null ? EventoEstelar.Fecha.ToString("dd MMMM, yyyy") : "15 Diciembre, 2026")</strong>
-                    </span>
-                    <span class="d-flex align-items-center gap-1">
-                        <i class="bi bi-clock text-warning"></i>
-                        <span class="text-white">@(EventoEstelar != null ? EventoEstelar.Hora.ToString("hh:mm tt") : "07:30 PM")</span>
-                    </span>
-                    <span class="d-flex align-items-center gap-1">
-                        <i class="bi bi-geo-alt text-warning"></i>
-                        <span class="text-white">@(EventoEstelar?.Lugar ?? "Coliseo Central de Combate - Arena Bogotá")</span>
-                    </span>
-                </div>
-
-                <p class="ugp-hero-desc">
-                    @(EventoEstelar?.Descripcion ?? "La promotora número uno de artes marciales mixtas y grappling profesional regresa con una cartelera de impacto continental. Los mejores finalizadores del circuito frente a frente en una noche sin tregua.")
-                </p>
-
-                <div class="d-flex flex-wrap gap-3 mt-4">
-                    <a href="@($"/checkout/{(EventoEstelar?.EventoId ?? 1)}")" class="btn-ugp-gold btn-lg">
-                        <i class="bi bi-ticket-perforated-fill"></i>
-                        <span>CONSEGUIR ENTRADAS</span>
-                    </a>
-                    <a href="#peleadores" class="btn-ugp-outline btn-lg">
-                        <i class="bi bi-shield-shaded"></i>
-                        <span>VER ROSTER</span>
-                    </a>
-                </div>
-
-                <!-- Métricas Clave de la Liga -->
-                <div class="ugp-stats-strip">
-                    <div class="ugp-stat-item">
-                        <div class="num">@(TotalEventos > 0 ? TotalEventos : 12)</div>
-                        <div class="lbl">Eventos Realizados</div>
+                @if (Destacados.Count > 1)
+                {
+                    <div class="hero-controls" role="group" aria-label="Controles del carrusel">
+                        <button type="button" aria-label="Evento anterior" aria-controls="portada-eventos" @onclick="Anterior">‹</button>
+                        @for (var i = 0; i < Destacados.Count; i++)
+                        {
+                            var indice = i;
+                            <button type="button" class="hero-dot" aria-label="@($"Mostrar evento {indice + 1}: {Destacados[indice].Evento.Nombre}")"
+                                    aria-pressed="@(indice == Diapositiva ? "true" : "false")" aria-controls="portada-eventos"
+                                    @onclick="() => Diapositiva = indice"><span></span></button>
+                        }
+                        <button type="button" aria-label="Evento siguiente" aria-controls="portada-eventos" @onclick="Siguiente">›</button>
                     </div>
-                    <div class="ugp-stat-item">
-                        <div class="num">@(TotalPeleadores > 0 ? TotalPeleadores : 48)</div>
-                        <div class="lbl">Guerreros Élite</div>
-                    </div>
-                    <div class="ugp-stat-item">
-                        <div class="num">+15K</div>
-                        <div class="lbl">Fanáticos en Vivo</div>
-                    </div>
-                    <div class="ugp-stat-item">
-                        <div class="num">100%</div>
-                        <div class="lbl">Sumisiones & KOs</div>
-                    </div>
-                </div>
+                    <span class="visually-hidden" role="status">Evento @(Diapositiva + 1) de @Destacados.Count: @Destacados[Diapositiva].Evento.Nombre</span>
+                }
             </div>
+        }
 
-            <!-- Columna Derecha: Póster / Visual del Campeonato -->
-            <div class="col-lg-5 text-center">
-                <div class="position-relative d-inline-block w-100" style="max-width: 420px;">
-                    <div class="border border-warning border-opacity-50 rounded-4 overflow-hidden shadow-lg p-2 bg-dark">
-                        <img src="@(string.IsNullOrEmpty(EventoEstelar?.ImagenUrl) ? "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop" : EventoEstelar.ImagenUrl)" 
-                             alt="Cartelera Estelar UGP" 
-                             class="img-fluid rounded-3 w-100" 
-                             style="max-height: 480px; object-fit: cover; filter: contrast(1.15) brightness(0.9);" />
-                    </div>
-                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-4 bg-black bg-opacity-90 border border-warning px-4 py-2 rounded-pill shadow">
-                        <span class="font-monospace text-warning fw-bold small text-uppercase">
-                            <i class="bi bi-trophy-fill me-1"></i> TÍTULO LATINOAMERICANO UGP
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a class="hero-calendar" href="#eventos">Ver cartelera</a>
     </div>
 </section>
+
+<div class="container">
+    <div class="ugp-stats-strip home-stats">
+        <div class="ugp-stat-item">
+            <div class="num">@(CargandoEventos || ErrorEventos ? "—" : EventosList.Count.ToString())</div>
+            <div class="lbl">Eventos próximos</div>
+        </div>
+        <div class="ugp-stat-item">
+            <div class="num">@(CargandoPeleadores || ErrorPeleadores ? "—" : TotalPeleadores.ToString())</div>
+            <div class="lbl">Peleadores registrados</div>
+        </div>
+    </div>
+</div>
 
 <!-- ======================================================================
      SECCIÓN 2: CARTELERA DE PRÓXIMOS EVENTOS
@@ -112,18 +97,23 @@
         </div>
 
         <div class="row g-4">
-            @if (EventosList.Any())
+            @if (CargandoEventos)
             {
-                @foreach (var ev in EventosList)
+                <p role="status">Cargando cartelera…</p>
+            }
+            else if (EventosList.Any())
+            {
+                @foreach (var entrada in EventosList)
                 {
+                    var ev = entrada.Evento;
                     <div class="col-lg-4 col-md-6">
                         <div class="event-card">
                             <div class="position-relative">
-                                <img src="@(string.IsNullOrEmpty(ev.ImagenUrl) ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=800&auto=format&fit=crop" : ev.ImagenUrl)" 
+                                <img src="@(string.IsNullOrEmpty(ev.ImagenUrl) ? "images/ugp/portada-escritorio.jpg" : ev.ImagenUrl)"
                                      alt="@ev.Nombre" 
                                      class="event-card-img" />
                                 <span class="position-absolute top-0 end-0 m-3 badge bg-black border border-warning text-warning px-3 py-2 text-uppercase font-monospace">
-                                    @(ev.EstadoEvento ?? "Próximo")
+                                    @(ev.EstadoEvento ?? "Sin estado")
                                 </span>
                             </div>
                             <div class="event-card-body">
@@ -131,22 +121,29 @@
                                     <div class="text-warning small fw-bold font-monospace mb-1">
                                         <i class="bi bi-calendar3 me-1"></i> @ev.Fecha.ToString("dd MMMM, yyyy") • @ev.Hora.ToString("hh:mm tt")
                                     </div>
-                                    <h4 class="text-white fw-bold mb-2">@ev.Nombre</h4>
+                                    <h4 class="text-white fw-bold mb-2"><a class="text-reset" href="@($"/eventos/{ev.EventoId}")">@ev.Nombre</a></h4>
                                     <div class="text-secondary small mb-3">
                                         <i class="bi bi-geo-alt-fill text-danger me-1"></i> @ev.Lugar
                                     </div>
                                     <p class="text-secondary small line-clamp-2">
-                                        @(string.IsNullOrEmpty(ev.Descripcion) ? "Combates estelares de grappling y MMA profesional." : ev.Descripcion)
+                                        @(string.IsNullOrEmpty(ev.Descripcion) ? "Descripción no disponible." : ev.Descripcion)
                                     </p>
                                 </div>
                                 <div class="pt-3 border-top border-secondary d-flex justify-content-between align-items-center mt-3">
-                                    <div>
-                                        <div class="text-secondary small" style="font-size: 0.75rem;">DESDE</div>
-                                        <div class="text-white fw-bold fs-5 font-monospace">$50.000</div>
-                                    </div>
-                                    <a href="@($"/checkout/{ev.EventoId}")" class="btn-ugp-gold btn-sm px-3 py-2">
-                                        <i class="bi bi-ticket-fill"></i> COMPRAR ENTRADAS
-                                    </a>
+                                    @if (entrada.PrecioDesde is decimal precio)
+                                    {
+                                        <div>
+                                            <div class="text-secondary small">DESDE</div>
+                                            <div class="text-white fw-bold">@precio.ToString("C", CulturaCop) COP</div>
+                                        </div>
+                                        <a href="@($"/checkout/{ev.EventoId}")" class="btn-ugp-gold btn-sm px-3 py-2">
+                                            <i class="bi bi-ticket-fill" aria-hidden="true"></i> COMPRAR ENTRADAS
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-light">Entradas no disponibles</span>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -157,13 +154,29 @@
             {
                 <div class="col-12 text-center py-5">
                     <i class="bi bi-calendar-x fs-1 text-secondary mb-3"></i>
-                    <p class="text-secondary">No hay eventos registrados en este momento. ¡Mantente atento a nuestros próximos anuncios!</p>
+                    <p class="text-secondary">@(ErrorEventos ? "No pudimos cargar la cartelera. Intenta nuevamente más tarde." : "No hay próximos eventos publicados en este momento.")</p>
                 </div>
             }
         </div>
     </div>
 </section>
 
+@if (EventosActivosIniciados.Count > 0)
+{
+    <section id="eventos-en-curso" class="container py-4" aria-labelledby="en-curso-title">
+        <h2 id="en-curso-title">Eventos activos iniciados</h2>
+        <p class="text-secondary">Su inicio ya pasó y siguen marcados como activos. No se dispone de una hora de finalización; consulta el detalle.</p>
+        <div class="row g-4">
+            @foreach (var evento in EventosActivosIniciados)
+            {
+                <article class="col-md-6 col-lg-4">
+                    <a href="@($"/eventos/{evento.EventoId}")">@evento.Nombre</a>
+                    <p>@evento.Fecha.ToString("dd/MM/yyyy") · @evento.Hora.ToString("HH:mm") (Colombia)</p>
+                </article>
+            }
+        </div>
+    </section>
+}
 <!-- ======================================================================
      SECCIÓN 3: ROSTER DE COMBATE (PELEADORES)
      ====================================================================== -->
@@ -173,29 +186,36 @@
             <span class="ugp-badge-red mb-2"><i class="bi bi-fire me-1"></i> ROSTER DE GUERREROS</span>
             <h2 class="display-6 fw-bold text-white mb-2">ATLETAS DESTACADOS</h2>
             <p class="text-secondary mx-auto small" style="max-width: 550px;">
-                Conoce a los campeones y contendientes número uno que libran batalla en el hexágono de Ultimate Grappling Promotion.
+                Conoce a los peleadores registrados en UGP.
             </p>
         </div>
 
         <div class="row g-4">
+            @if (CargandoPeleadores || ErrorPeleadores || PeleadoresList.Count == 0)
+            {
+                <p class="col-12 text-secondary" role="status">@(CargandoPeleadores ? "Cargando peleadores…" : ErrorPeleadores ? "No pudimos cargar los peleadores. Intenta más tarde." : "No hay peleadores publicados por ahora.")</p>
+            }
             @foreach (var peleador in PeleadoresList)
             {
                 <div class="col-xl-3 col-lg-4 col-md-6">
                     <div class="fighter-card">
                         <div class="fighter-image-wrap">
-                            <img src="@(string.IsNullOrEmpty(peleador.FotoUrl) ? "https://images.unsplash.com/photo-1599058917212-d750089bc07e?q=80&w=800&auto=format&fit=crop" : peleador.FotoUrl)" 
-                                 alt="@peleador.Nombre" />
+                            @if (!string.IsNullOrWhiteSpace(peleador.FotoUrl))
+                            {
+                                <img src="@peleador.FotoUrl" alt="@peleador.Nombre" />
+                            }
+                            else { <span class="text-secondary p-3">Fotografía no disponible</span> }
                             <div class="fighter-overlay"></div>
                             <span class="position-absolute top-0 start-0 m-3 badge bg-black bg-opacity-75 border border-secondary text-white small">
-                                @(peleador.Peso.HasValue ? $"{peleador.Peso:N0} KG" : "PESO ABIERTO")
+                                @(peleador.Peso.HasValue ? $"{peleador.Peso:N0} KG" : "Peso no registrado")
                             </span>
                         </div>
                         <div class="fighter-body">
-                            <div class="fighter-nickname">"@(!string.IsNullOrEmpty(peleador.Apodo) ? peleador.Apodo : "THE WARRIOR")"</div>
+                            <div class="fighter-nickname">"@(!string.IsNullOrEmpty(peleador.Apodo) ? peleador.Apodo : "Sin apodo registrado")"</div>
                             <h4 class="fighter-name">@peleador.Nombre</h4>
                             <div class="fighter-stats-row">
-                                <span><i class="bi bi-flag-fill me-1 text-warning"></i> @(peleador.Nacionalidad ?? "Internacional")</span>
-                                <div class="fighter-record">@(peleador.PeleasGanadas ?? 0)W - @(peleador.PeleasPerdidas ?? 0)L</div>
+                                <span><i class="bi bi-flag-fill me-1 text-warning"></i> @(peleador.Nacionalidad ?? "Nacionalidad no registrada")</span>
+                                <div class="fighter-record">@(peleador.PeleasGanadas?.ToString() ?? "—")W - @(peleador.PeleasPerdidas?.ToString() ?? "—")L</div>
                             </div>
                         </div>
                     </div>
@@ -219,47 +239,33 @@
                         </div>
                         <div>
                             <span class="ugp-badge-gold">SEGURIDAD CRIPTOGRÁFICA</span>
-                            <h3 class="text-white fw-bold mb-0">VERIFICACIÓN Y ACCESO DE BOLETO</h3>
+                            <h3 class="text-white fw-bold mb-0">VERIFICACIÓN DE AUTENTICIDAD DEL BOLETO</h3>
                         </div>
                     </div>
 
                     <p class="text-secondary small mb-4">
-                        Ingresa el código único del boleto (ej. <code>UGP-2026-001000</code>) o la cadena escaneada del código QR para comprobar su autenticidad y estado de acceso en tiempo real.
+                        Ingresa el contenido completo del QR para comprobar su autenticidad. La consulta no registra el ingreso.
                     </p>
 
                     <div class="row g-2 mb-3">
                         <div class="col-sm-9">
                             <input type="text" 
                                    class="form-control bg-black text-white border-secondary py-2 font-monospace" 
-                                   placeholder="Ej: UGP-2026-001000 o código QR" 
+                                   placeholder="Contenido completo del QR"
+                                   maxlength="128"
                                    @bind="codigoParaValidar" 
                                    @bind:event="oninput" />
                         </div>
                         <div class="col-sm-3">
-                            <button class="btn-ugp-gold w-100 py-2" @onclick="EjecutarValidacion">
+                            <button class="btn-ugp-gold w-100 py-2" @onclick="EjecutarValidacion" disabled="@ValidandoBoleto">
                                 <i class="bi bi-search"></i> VERIFICAR
                             </button>
                         </div>
                     </div>
 
-                    @if (resultadoValidacion != null)
+                    @if (mensajeValidacionQr is not null)
                     {
-                        <div class="p-3 mt-3 rounded-3 @(resultadoValidacion.Existe && resultadoValidacion.EstadoTicket == "Activo" ? "bg-success bg-opacity-25 border border-success" : "bg-danger bg-opacity-25 border border-danger")">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi @(resultadoValidacion.Existe && resultadoValidacion.EstadoTicket == "Activo" ? "bi-check-circle-fill text-success" : "bi-exclamation-triangle-fill text-danger") fs-4"></i>
-                                <strong class="text-white fs-6">@resultadoValidacion.Mensaje</strong>
-                            </div>
-
-                            @if (resultadoValidacion.Existe)
-                            {
-                                <div class="row g-2 text-secondary small pt-2 border-top border-secondary">
-                                    <div class="col-sm-6"><strong>Folio:</strong> <span class="text-white font-monospace">@resultadoValidacion.CodigoUnico</span></div>
-                                    <div class="col-sm-6"><strong>Localidad:</strong> <span class="text-warning">@resultadoValidacion.TipoTicket</span></div>
-                                    <div class="col-sm-6"><strong>Titular:</strong> <span class="text-white">@resultadoValidacion.AsistenteNombre</span></div>
-                                    <div class="col-sm-6"><strong>Estado:</strong> <span class="badge @(resultadoValidacion.EstadoTicket == "Activo" ? "bg-success" : "bg-warning text-dark")">@resultadoValidacion.EstadoTicket</span></div>
-                                </div>
-                            }
-                        </div>
+                        <p class="mt-3 text-white" role="status">@mensajeValidacionQr</p>
                     }
                 </div>
             </div>
@@ -270,34 +276,40 @@
 <!-- ======================================================================
      SECCIÓN 5: EXPERIENCIAS & TESTIMONIOS DE FANÁTICOS
      ====================================================================== -->
+<UGP_ultimo_guerrero_en_pie_.Components.Multimedia.MultimediaGallery />
+
 <section id="experiencias" class="py-5" style="background: var(--ugp-dark-1); border-bottom: 1px solid var(--border-subtle);">
     <div class="container py-4">
         <div class="text-center mb-5">
             <span class="ugp-badge-gold mb-2">FAN ZONE</span>
             <h2 class="display-6 fw-bold text-white mb-2">EXPERIENCIA UGP</h2>
             <p class="text-secondary mx-auto small" style="max-width: 550px;">
-                Opiniones y reseñas verificadas de fanáticos y atletas que han vivido la adrenalina del evento en primera fila.
+                Experiencias compartidas en UGP.
             </p>
         </div>
 
         <div class="row g-4">
+            @if (CargandoExperiencias || ErrorExperiencias || ExperienciasList.Count == 0)
+            {
+                <p class="col-12 text-secondary" role="status">@(CargandoExperiencias ? "Cargando experiencias…" : ErrorExperiencias ? "No pudimos cargar las experiencias. Intenta más tarde." : "No hay experiencias publicadas por ahora.")</p>
+            }
             @foreach (var exp in ExperienciasList)
             {
                 <div class="col-lg-4 col-md-6">
                     <div class="review-card">
                         <div class="review-stars">
-                            @for (int i = 0; i < (exp.Calificacion ?? 5); i++)
+                            @for (int i = 0; i < (exp.Calificacion is >= 1 and <= 5 ? exp.Calificacion.Value : 0); i++)
                             {
                                 <i class="bi bi-star-fill text-warning me-1"></i>
                             }
                         </div>
                         <h5 class="text-white fw-bold mb-2">@exp.Nombre</h5>
                         <p class="text-secondary small mb-3" style="line-height: 1.6;">
-                            "@(string.IsNullOrEmpty(exp.Descripcion) ? "Una atmósfera incomparable, producción de nivel UFC y combates electrizantes de principio a fin." : exp.Descripcion)"
+                            "@(string.IsNullOrEmpty(exp.Descripcion) ? "Sin descripción." : exp.Descripcion)"
                         </p>
                         <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary small text-muted">
-                            <span><i class="bi bi-patch-check-fill text-success me-1"></i> Asistente Verificado</span>
-                            <span>UGP Fan</span>
+                            <span>Experiencia publicada</span>
+                            <span></span>
                         </div>
                     </div>
                 </div>
@@ -317,6 +329,10 @@
         </h3>
 
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 py-3">
+            @if (CargandoPatrocinadores || ErrorPatrocinadores || PatrocinadoresList.Count == 0)
+            {
+                <p class="text-secondary" role="status">@(CargandoPatrocinadores ? "Cargando patrocinadores…" : ErrorPatrocinadores ? "No pudimos cargar los patrocinadores. Intenta más tarde." : "No hay patrocinadores publicados por ahora.")</p>
+            }
             @foreach (var pat in PatrocinadoresList)
             {
                 <div class="sponsor-logo-item bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-25 p-3">
@@ -330,31 +346,61 @@
 </section>
 
 @code {
-    private Evento? EventoEstelar;
-    private List<Evento> EventosList = new();
+    private static readonly System.Globalization.CultureInfo CulturaCop = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+    private sealed record EventoCartelera(Evento Evento, decimal? PrecioDesde);
+    private List<EventoCartelera> EventosList = [];
+    private List<EventoCartelera> Destacados = [];
+    private bool ErrorEventos, ErrorPeleadores, ErrorPatrocinadores, ErrorExperiencias;
+    private bool CargandoEventos = true, CargandoPeleadores = true, CargandoPatrocinadores = true, CargandoExperiencias = true;
+    private List<Evento> EventosActivosIniciados = [];
+    private int Diapositiva;
+
+    private void Anterior() => Diapositiva = (Diapositiva + Destacados.Count - 1) % Destacados.Count;
+    private void Siguiente() => Diapositiva = (Diapositiva + 1) % Destacados.Count;
     private List<Peleador> PeleadoresList = new();
     private List<Patrocinador> PatrocinadoresList = new();
     private List<Experiencia> ExperienciasList = new();
 
-    private int TotalEventos = 0;
     private int TotalPeleadores = 0;
 
     private string codigoParaValidar = "";
-    private ValidarTicketVm? resultadoValidacion;
+    private string? mensajeValidacionQr;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // Consultas asíncronas con AsNoTracking para alto rendimiento
-            EventosList = await Db.Eventos.AsNoTracking()
-                .Include(e => e.Venue)
+            var ahora = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.UtcNow, "SA Pacific Standard Time").DateTime;
+            var localidades = VentaEventoPublica.LocalidadesDisponibles(Db);
+            var eventos = await Db.Eventos.AsNoTracking()
                 .OrderBy(e => e.Fecha)
+                .ThenBy(e => e.Hora)
+                .ThenBy(e => e.EventoId)
+                .Select(e => new
+                {
+                    Evento = e,
+                    Precio = localidades.Where(l => l.EventoId == e.EventoId)
+                        .OrderBy(l => l.Precio)
+                        .Select(l => (decimal?)l.Precio)
+                        .FirstOrDefault()
+                })
                 .ToListAsync();
 
-            TotalEventos = EventosList.Count;
-            EventoEstelar = EventosList.FirstOrDefault();
+            EventosList = eventos.Where(e => e.Evento.Fecha.ToDateTime(e.Evento.Hora) > ahora).Select(e => new EventoCartelera(e.Evento,
+                VentaEventoPublica.Habilitada(e.Evento)
+                    ? e.Precio : null)).ToList();
+            Destacados = EventosList.Where(e => e.PrecioDesde.HasValue).Take(4).ToList();
+            EventosActivosIniciados = eventos.Where(e => e.Evento.EstadoEvento == "Activo" && e.Evento.Fecha.ToDateTime(e.Evento.Hora) <= ahora).Select(e => e.Evento).ToList();
+        }
+        catch (Exception ex)
+        {
+            ErrorEventos = true;
+            Logger.LogError("Home: error en eventos ({Tipo}).", ex.GetType().Name);
+        }
+        finally { CargandoEventos = false; }
 
+        try
+        {
             PeleadoresList = await Db.Peleadores.AsNoTracking()
                 .OrderByDescending(p => p.PeleasGanadas)
                 .Take(8)
@@ -362,130 +408,43 @@
 
             TotalPeleadores = await Db.Peleadores.CountAsync();
 
-            PatrocinadoresList = await Db.Patrocinadores.AsNoTracking().ToListAsync();
-            ExperienciasList = await Db.Experiencias.AsNoTracking().Take(6).ToListAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si la base de datos aún no contiene registros, usamos datos semilla de muestra
+            ErrorPeleadores = true;
+            PeleadoresList.Clear();
+            Logger.LogError("Home: error en peleadores ({Tipo}).", ex.GetType().Name);
         }
-
-        CargarDatosDemostracionSiVacio();
+        finally { CargandoPeleadores = false; }
+        try { PatrocinadoresList = await Db.Patrocinadores.AsNoTracking().ToListAsync(); }
+        catch (Exception ex) { ErrorPatrocinadores = true; Logger.LogError("Home: error en patrocinadores ({Tipo}).", ex.GetType().Name); }
+        finally { CargandoPatrocinadores = false; }
+        try { ExperienciasList = await Db.Experiencias.AsNoTracking().Take(6).ToListAsync(); }
+        catch (Exception ex) { ErrorExperiencias = true; Logger.LogError("Home: error en experiencias ({Tipo}).", ex.GetType().Name); }
+        finally { CargandoExperiencias = false; }
     }
 
-    private void CargarDatosDemostracionSiVacio()
-    {
-        if (EventoEstelar == null)
-        {
-            EventoEstelar = new Evento
-            {
-                EventoId = 1,
-                Nombre = "UGP 05: GUERRA EN LA JAULA",
-                Fecha = new DateOnly(2026, 12, 15),
-                Hora = new TimeOnly(19, 30),
-                Lugar = "Coliseo Central de Combate - Arena Bogotá",
-                Descripcion = "La noche más esperada del año. Ocho combates estelares de sumisión y striking con los mejores atletas de Latinoamérica disputando el cinturón de campeonato.",
-                ImagenUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop",
-                EstadoEvento = "Activo",
-                TicketsDisponibles = 850
-            };
-        }
-
-        if (!EventosList.Any())
-        {
-            EventosList = new List<Evento>
-            {
-                EventoEstelar,
-                new Evento
-                {
-                    EventoId = 2,
-                    Nombre = "UGP 06: FURIA EN EL CAGE",
-                    Fecha = new DateOnly(2027, 1, 23),
-                    Hora = new TimeOnly(20, 0),
-                    Lugar = "Palacio de los Deportes - Medellín",
-                    Descripcion = "Duelo de escuelas de Jiu-Jitsu Brasileño y Lucha Olímpica en jaula profesional.",
-                    ImagenUrl = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=800&auto=format&fit=crop",
-                    EstadoEvento = "Próximo",
-                    TicketsDisponibles = 1200
-                },
-                new Evento
-                {
-                    EventoId = 3,
-                    Nombre = "UGP 07: DESAFÍO SUPREMO",
-                    Fecha = new DateOnly(2027, 2, 27),
-                    Hora = new TimeOnly(19, 0),
-                    Lugar = "Centro de Convenciones - Cali",
-                    Descripcion = "Grand Prix de peso medio a eliminación directa en una sola noche.",
-                    ImagenUrl = "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=800&auto=format&fit=crop",
-                    EstadoEvento = "Próximo",
-                    TicketsDisponibles = 950
-                }
-            };
-        }
-
-        if (!PeleadoresList.Any())
-        {
-            PeleadoresList = new List<Peleador>
-            {
-                new Peleador { PeleadorId = 1, Nombre = "Carlos Mendoza", Apodo = "EL TANQUE", Nacionalidad = "Colombia", Peso = 93.0m, PeleasGanadas = 14, PeleasPerdidas = 1, FotoUrl = "https://images.unsplash.com/photo-1599058917212-d750089bc07e?q=80&w=800&auto=format&fit=crop" },
-                new Peleador { PeleadorId = 2, Nombre = "Alejandro Silva", Apodo = "THE PREDATOR", Nacionalidad = "Brasil", Peso = 84.0m, PeleasGanadas = 12, PeleasPerdidas = 0, FotoUrl = "https://images.unsplash.com/photo-1583473848882-f9a5bc7fd2ee?q=80&w=800&auto=format&fit=crop" },
-                new Peleador { PeleadorId = 3, Nombre = "Mateo Rivas", Apodo = "EL TORNADO", Nacionalidad = "México", Peso = 77.0m, PeleasGanadas = 10, PeleasPerdidas = 2, FotoUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop" },
-                new Peleador { PeleadorId = 4, Nombre = "Diego Gómez", Apodo = "THE VIPER", Nacionalidad = "Argentina", Peso = 70.0m, PeleasGanadas = 15, PeleasPerdidas = 3, FotoUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop" }
-            };
-        }
-
-        if (!PatrocinadoresList.Any())
-        {
-            PatrocinadoresList = new List<Patrocinador>
-            {
-                new Patrocinador { PatrocinadorId = 1, Empresa = "VENUM FIGHT WEAR" },
-                new Patrocinador { PatrocinadorId = 2, Empresa = "HAYABUSA COMBAT" },
-                new Patrocinador { PatrocinadorId = 3, Empresa = "MONSTER ENERGY" },
-                new Patrocinador { PatrocinadorId = 4, Empresa = "RDX SPORTS" },
-                new Patrocinador { PatrocinadorId = 5, Empresa = "REEBOK COMBAT" }
-            };
-        }
-
-        if (!ExperienciasList.Any())
-        {
-            ExperienciasList = new List<Experiencia>
-            {
-                new Experiencia { ExperienciaId = 1, Nombre = "Juan Camilo Restrepo", Calificacion = 5, Descripcion = "La atmósfera de UGP es incomparable. El combate estelar fue de los mejores que he visto en Latinoamérica." },
-                new Experiencia { ExperienciaId = 2, Nombre = "Mariana Vargas", Calificacion = 5, Descripcion = "Organización impecable, el ingreso con el código QR fue inmediato sin filas y la vista desde la localidad fue perfecta." },
-                new Experiencia { ExperienciaId = 3, Nombre = "Felipe Arango", Calificacion = 5, Descripcion = "El nivel técnico de los peleadores de grappling es de élite mundial. ¡Imperdible para cualquier amante de las MMA!" }
-            };
-        }
-    }
+    private bool ValidandoBoleto;
 
     private async Task EjecutarValidacion()
     {
-        if (string.IsNullOrWhiteSpace(codigoParaValidar))
-        {
-            resultadoValidacion = new ValidarTicketVm
-            {
-                Existe = false,
-                Mensaje = "Por favor ingresa un código único o contenido de QR para validar."
-            };
-            return;
-        }
+        if (ValidandoBoleto) return;
 
-        var input = codigoParaValidar.Trim();
-        if (input.StartsWith("UGP|"))
+        ValidandoBoleto = true;
+        mensajeValidacionQr = null;
+        try
         {
-            resultadoValidacion = await TicketService.ValidarQrContenido(input);
+            mensajeValidacionQr = await TicketService.EsQrAutenticoAsync(codigoParaValidar.Trim())
+                ? "El código QR es auténtico. Esta consulta no autoriza el ingreso."
+                : "No se pudo verificar el código QR.";
         }
-        else
+        catch
         {
-            resultadoValidacion = await TicketService.ValidarCodigo(input);
+            mensajeValidacionQr = "No se pudo verificar el código QR.";
         }
-
-        if (resultadoValidacion == null)
+        finally
         {
-            resultadoValidacion = new ValidarTicketVm
-            {
-                Existe = false,
-                Mensaje = $"Boleto '{input}' no registrado en la base de datos de UGP."
-            };
+            ValidandoBoleto = false;
         }
     }
 }

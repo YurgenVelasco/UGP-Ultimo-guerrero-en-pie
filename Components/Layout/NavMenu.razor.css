@@ -1,4 +1,58 @@
-/* Scoped overrides for UGP Top Navbar */
-.navbar-toggler:focus {
-    box-shadow: 0 0 0 0.15rem rgba(212, 175, 55, 0.5);
+.site-header {
+    background: #0a0a0a;
+    border-bottom: 1px solid #3a301b;
+}
+
+.navbar {
+    --bs-navbar-padding-y: .65rem;
+    gap: .5rem;
+}
+
+.navbar-brand img {
+    display: block;
+    width: clamp(7.5rem, 12vw, 10rem);
+    height: auto;
+}
+
+.site-menu-toggle {
+    color: #f8f6f0;
+    border: 1px solid #6f5c2a;
+    font-size: 1rem;
+    padding: .55rem .75rem;
+}
+
+.navbar ::deep .site-link {
+    display: block;
+    padding: .65rem .75rem;
+    color: #f8f6f0;
+    font: 700 1.1rem/1.2 "Barlow Condensed", sans-serif;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.navbar ::deep .site-link:hover,
+.navbar ::deep .site-link.active {
+    color: #c9a84c;
+}
+
+.site-cta {
+    background: #c9a84c;
+    border-radius: .25rem;
+    color: #0a0a0a;
+}
+
+.navbar .site-cta:hover {
+    background: #e0c475;
+    color: #0a0a0a;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        padding-block: .5rem;
+    }
+
+    .site-cta {
+        margin-top: .4rem;
+        text-align: center;
+    }
 }

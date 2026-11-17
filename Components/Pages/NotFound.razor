@@ -1,5 +1,26 @@
-﻿@page "/not-found"
+@page "/not-found"
 @layout MainLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>Página no encontrada | UGP</PageTitle>
+
+<div class="container public-page">
+    <header class="public-heading">
+        <p class="public-eyebrow">Error 404</p>
+        <h1>Página <span>no encontrada</span></h1>
+        <p>Comprueba la dirección o vuelve al inicio para encontrar lo que buscas.</p>
+        <a class="public-action" href="/">Volver al inicio</a>
+    </header>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext?.Response is { HasStarted: false, StatusCode: 200 } response)
+        {
+            response.StatusCode = StatusCodes.Status404NotFound;
+        }
+    }
+}

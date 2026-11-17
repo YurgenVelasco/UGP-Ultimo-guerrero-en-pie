@@ -1,9 +1,13 @@
 @page "/checkout"
 @page "/checkout/{EventoId:int}"
 @rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
 @inject ApplicationDbContext Db
 @inject ICompraService CompraService
 @inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationState
+@inject UGP_ultimo_guerrero_en_pie_.Services.Implementations.CompraAccess AccesoCompra
+@inject IJSRuntime JS
 
 <PageTitle>Comprar Boletos | UGP - Ultimate Grappling Promotion</PageTitle>
 
@@ -24,7 +28,7 @@
             <div class="text-center py-5">
                 <i class="bi bi-calendar2-x display-1 text-secondary"></i>
                 <h2 class="text-white fw-bold mt-3">Evento no encontrado</h2>
-                <p class="text-secondary">No se encontró el evento solicitado o la boletería se encuentra cerrada.</p>
+                <p class="text-secondary">@(string.IsNullOrEmpty(MensajeError) ? "No se encontró el evento solicitado o la boletería se encuentra cerrada." : MensajeError)</p>
                 <a href="" class="btn-ugp-gold mt-3">
                     <i class="bi bi-arrow-left me-1"></i> Volver a la Cartelera
                 </a>
@@ -32,6 +36,7 @@
         }
         else
         {
+            <CascadingValue Value="ContextoFormulario" IsFixed="true">
             <!-- Cabecera del Evento -->
             <div class="border-bottom border-secondary pb-4 mb-4">
                 <div class="row align-items-center g-3">
@@ -149,7 +154,7 @@
                                     <span class="text-white font-monospace fs-4 fw-bold px-3">@Formulario.Cantidad</span>
                                     <button class="btn btn-outline-secondary text-white px-3" 
                                             @onclick="IncrementarCantidad" 
-                                            disabled="@(Formulario.Cantidad >= 10)">+</button>
+                                            disabled="@(Formulario.Cantidad >= LimiteCantidad)">+</button>
                                 </div>
                                 <span class="text-muted small" style="font-size: 0.75rem;">Máximo 10 boletos por transacción.</span>
                             </div>
@@ -165,7 +170,10 @@
                                 </div>
                             </div>
 
-                            <button class="btn-ugp-gold w-100 py-3 mt-4" @onclick="AvanzarPaso2">
+                            <ValidationMessage For="@(() => Formulario.EventoId)" />
+                            <ValidationMessage For="@(() => Formulario.TipoEntradaId)" />
+                            <ValidationMessage For="@(() => Formulario.Cantidad)" />
+                            <button class="btn-ugp-gold w-100 py-3 mt-4" @onclick="AvanzarPaso2" disabled="@(LimiteCantidad < 1)">
                                 <span>CONTINUAR A DATOS</span>
                                 <i class="bi bi-arrow-right"></i>
                             </button>
@@ -192,6 +200,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label text-secondary small">Nombre Completo *</label>
                                     <input type="text" class="form-control bg-black text-white border-secondary" @bind="Formulario.NombreComprador" placeholder="Ej: Carlos Silva" />
+                                    <ValidationMessage For="@(() => Formulario.NombreComprador)" />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-secondary small">Documento de Identidad *</label>
@@ -205,14 +214,18 @@
                                         </select>
                                         <input type="text" class="form-control bg-black text-white border-secondary" @bind="Formulario.DocumentoComprador" placeholder="Número de documento *" />
                                     </div>
+                                    <ValidationMessage For="@(() => Formulario.TipoDocumento)" />
+                                    <ValidationMessage For="@(() => Formulario.DocumentoComprador)" />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-secondary small">Correo Electrónico (donde recibirás boletos) *</label>
                                     <input type="email" class="form-control bg-black text-white border-secondary" @bind="Formulario.CorreoComprador" placeholder="correo@ejemplo.com" />
+                                    <ValidationMessage For="@(() => Formulario.CorreoComprador)" />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-secondary small">Teléfono Móvil (WhatsApp)</label>
                                     <input type="tel" class="form-control bg-black text-white border-secondary" @bind="Formulario.TelefonoComprador" placeholder="Ej: +57 300 123 4567" />
+                                    <ValidationMessage For="@(() => Formulario.TelefonoComprador)" />
                                 </div>
                             </div>
                         </div>
@@ -229,6 +242,7 @@
                             Cada boleto es nominal y genera un código QR criptográfico único vinculado al documento de cada asistente.
                         </p>
 
+                        <ValidationMessage For="@(() => Formulario.Asistentes)" />
                         @for (int i = 0; i < Formulario.Asistentes.Count; i++)
                         {
                             var index = i;
@@ -241,6 +255,7 @@
                                 <div class="row g-2">
                                     <div class="col-md-4">
                                         <input type="text" class="form-control form-control-sm bg-black text-white border-secondary" placeholder="Nombre completo *" @bind="asistente.NombreCompleto" />
+                                        <ValidationMessage For="@(() => asistente.NombreCompleto)" />
                                     </div>
                                     <div class="col-md-4">
                                         <div class="input-group input-group-sm">
@@ -253,9 +268,17 @@
                                             </select>
                                             <input type="text" class="form-control bg-black text-white border-secondary" placeholder="No. Documento *" @bind="asistente.DocumentoIdentidad" />
                                         </div>
+                                        <ValidationMessage For="@(() => asistente.TipoDocumento)" />
+                                        <ValidationMessage For="@(() => asistente.DocumentoIdentidad)" />
                                     </div>
                                     <div class="col-md-4">
                                         <input type="email" class="form-control form-control-sm bg-black text-white border-secondary" placeholder="Correo electrónico *" @bind="asistente.CorreoElectronico" />
+                                        <ValidationMessage For="@(() => asistente.CorreoElectronico)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="tel" class="form-control form-control-sm bg-black text-white border-secondary"
+                                               aria-label="Teléfono del asistente" placeholder="Teléfono (opcional)" @bind="asistente.Telefono" />
+                                        <ValidationMessage For="@(() => asistente.Telefono)" />
                                     </div>
                                 </div>
                             </div>
@@ -347,12 +370,12 @@
                                 </div>
                             </div>
 
-                            <button type="button" class="btn btn-ugp-gold w-100 py-3 mt-3 fw-bold" @onclick="RedirigirAWompiConPrecio">
+                            <button type="button" class="btn btn-ugp-gold w-100 py-3 mt-3 fw-bold" @onclick="RedirigirAWompiConPrecio" disabled="@CreandoOrden">
                                 <i class="bi bi-credit-card me-2"></i> PAGAR CON WOMPI
                             </button>
 
                             <div class="text-center mt-3">
-                                <button type="button" class="btn btn-link text-secondary text-decoration-none small" @onclick="() => PasoActual = 2">
+                                <button type="button" class="btn btn-link text-secondary text-decoration-none small" @onclick="() => PasoActual = 2" disabled="@(CreandoOrden || CompraWompiId is not null)">
                                     <i class="bi bi-arrow-left me-1"></i> Modificar Datos
                                 </button>
                             </div>
@@ -361,6 +384,7 @@
                 </div>
             }
 
+            </CascadingValue>
         }
     </div>
 </div>
@@ -371,6 +395,8 @@
 
     private bool Cargando = true;
     private int PasoActual = 1;
+    private bool CreandoOrden;
+    private int? CompraWompiId;
     private string MensajeError = "";
 
     private Evento? EventoSeleccionado;
@@ -381,90 +407,64 @@
 
     private decimal SubtotalCalculado => (TipoEntradaSeleccionado?.Precio ?? 0) * Formulario.Cantidad;
 
-    protected override async Task OnInitializedAsync()
+    private EditContext ContextoFormulario = null!;
+    private ValidationMessageStore ErroresFormulario = null!;
+    private int LimiteCantidad => Math.Min(CheckoutFormVm.MaximoBoletos,
+        Math.Min(EventoSeleccionado?.TicketsDisponibles ?? 0, TipoEntradaSeleccionado?.Capacidad ?? 0));
+
+    protected override void OnInitialized()
+    {
+        ContextoFormulario = new EditContext(Formulario);
+        ErroresFormulario = new ValidationMessageStore(ContextoFormulario);
+    }
+
+    protected override async Task OnParametersSetAsync()
     {
         Cargando = true;
+        MensajeError = "";
+        PasoActual = 1;
+        CompraWompiId = null;
+        ErroresFormulario.Clear();
+        EventoSeleccionado = null;
+        TiposEntradaDisponibles.Clear();
+        TipoEntradaSeleccionado = null;
         try
         {
-            if (EventoId.HasValue && EventoId.Value > 0)
-            {
-                EventoSeleccionado = await Db.Eventos
-                    .Include(e => e.EventoTiposEntrada).ThenInclude(ete => ete.TipoEntrada)
-                    .Include(e => e.Venue)
-                    .FirstOrDefaultAsync(e => e.EventoId == EventoId.Value);
-            }
+            var eventos = Db.Eventos.AsNoTracking()
+                .Include(e => e.EventoTiposEntrada).ThenInclude(ete => ete.TipoEntrada)
+                .Include(e => e.Venue)
+                .Where(e => e.EstadoEvento == "Activo" || e.EstadoEvento == "Próximo");
 
-            if (EventoSeleccionado == null)
-            {
-                EventoSeleccionado = await Db.Eventos
-                    .Include(e => e.EventoTiposEntrada).ThenInclude(ete => ete.TipoEntrada)
-                    .Include(e => e.Venue)
-                    .OrderBy(e => e.Fecha)
-                    .FirstOrDefaultAsync(e => e.EstadoEvento == "Activo" || e.EstadoEvento == "Próximo");
-            }
+            EventoSeleccionado = EventoId.HasValue
+                ? await eventos.FirstOrDefaultAsync(e => e.EventoId == EventoId.Value)
+                : await eventos.OrderBy(e => e.Fecha).FirstOrDefaultAsync();
 
-            if (EventoSeleccionado != null)
+            if (EventoSeleccionado is not null)
             {
                 TiposEntradaDisponibles = EventoSeleccionado.EventoTiposEntrada
                     .Select(ete => ete.TipoEntrada)
-                    .Where(t => t != null)
+                    .Where(t => t.Precio > 0 && t.Capacidad > 0)
                     .ToList();
+                if (TiposEntradaDisponibles.Count == 0 || EventoSeleccionado.TicketsDisponibles < 1)
+                {
+                    MensajeError = "No hay localidades disponibles para este evento.";
+                }
             }
 
-            // Datos de demostración en caso de base de datos inicial vacía
-            if (EventoSeleccionado == null)
-            {
-                CargarEventoDemostracion();
-            }
-
-            if (!TiposEntradaDisponibles.Any())
-            {
-                CargarTiposEntradaDemostracion();
-            }
-
-            // Inicializar formulario
-            Formulario.EventoId = EventoSeleccionado?.EventoId ?? 1;
-            TipoEntradaSeleccionado = TiposEntradaDisponibles.FirstOrDefault();
-            Formulario.TipoEntradaId = TipoEntradaSeleccionado?.TipoEntradaId ?? 1;
+            Formulario.EventoId = EventoSeleccionado?.EventoId ?? 0;
+            SeleccionarTipoEntrada(TiposEntradaDisponibles.FirstOrDefault()?.TipoEntradaId ?? 0);
             Formulario.Cantidad = 1;
             SincronizarListaAsistentes();
         }
-        catch (Exception ex)
+        catch
         {
-            MensajeError = $"Error al cargar la información del evento: {ex.Message}";
-            CargarEventoDemostracion();
-            CargarTiposEntradaDemostracion();
+            EventoSeleccionado = null;
+            MensajeError = "No se pudo cargar la boletería. Intenta nuevamente.";
         }
         finally
         {
             Cargando = false;
         }
-    }
-
-    private void CargarEventoDemostracion()
-    {
-        EventoSeleccionado = new Evento
-        {
-            EventoId = 1,
-            Nombre = "UGP 05: GUERRA EN LA JAULA",
-            Fecha = new DateOnly(2026, 12, 15),
-            Hora = new TimeOnly(19, 30),
-            Lugar = "Coliseo Central de Combate - Arena Bogotá",
-            Descripcion = "La noche de campeonato más electrizante de Latinoamérica.",
-            TicketsDisponibles = 500,
-            EstadoEvento = "Activo"
-        };
-    }
-
-    private void CargarTiposEntradaDemostracion()
-    {
-        TiposEntradaDisponibles = new List<TipoEntrada>
-        {
-            new TipoEntrada { TipoEntradaId = 1, Nombre = "General Arena", Precio = 60000, Capacidad = 300 },
-            new TipoEntrada { TipoEntradaId = 2, Nombre = "Preferencial Cage-Side", Precio = 120000, Capacidad = 150 },
-            new TipoEntrada { TipoEntradaId = 3, Nombre = "VIP Hexágono + Meet & Greet", Precio = 250000, Capacidad = 50 }
-        };
-        TipoEntradaSeleccionado = TiposEntradaDisponibles.First();
     }
 
     private void SeleccionarTipoEntrada(int tipoEntradaId)
@@ -475,7 +475,7 @@
 
     private void IncrementarCantidad()
     {
-        if (Formulario.Cantidad < 10)
+        if (Formulario.Cantidad < LimiteCantidad)
         {
             Formulario.Cantidad++;
             SincronizarListaAsistentes();
@@ -518,92 +518,111 @@
     private void AvanzarPaso2()
     {
         MensajeError = "";
-        if (TipoEntradaSeleccionado == null)
+        ErroresFormulario.Clear();
+        if (TipoEntradaSeleccionado is null)
         {
-            MensajeError = "Por favor selecciona una localidad de entrada para continuar.";
-            return;
+            ErroresFormulario.Add(ContextoFormulario.Field(nameof(Formulario.TipoEntradaId)), "Selecciona una localidad.");
         }
-        PasoActual = 2;
+        else if (Formulario.Cantidad < 1 || Formulario.Cantidad > LimiteCantidad)
+        {
+            ErroresFormulario.Add(ContextoFormulario.Field(nameof(Formulario.Cantidad)),
+                $"Selecciona entre 1 y {LimiteCantidad} boletos disponibles.");
+        }
+        else
+        {
+            PasoActual = 2;
+        }
+
+        ContextoFormulario.NotifyValidationStateChanged();
     }
 
-    private static bool EsCorreoValido(string? correo)
+    private bool ValidarFormulario()
     {
-        if (string.IsNullOrWhiteSpace(correo)) return false;
-        try
+        Formulario.Normalizar();
+        ErroresFormulario.Clear();
+        var valido = true;
+        foreach (var (modelo, error) in Formulario.Validar())
         {
-            var emailAttr = new System.ComponentModel.DataAnnotations.EmailAddressAttribute();
-            if (!emailAttr.IsValid(correo)) return false;
+            valido = false;
+            foreach (var campo in error.MemberNames)
+            {
+                ErroresFormulario.Add(new FieldIdentifier(modelo, campo), error.ErrorMessage!);
+            }
+        }
 
-            return System.Net.Mail.MailAddress.TryCreate(correo, out var addr) &&
-                   addr.Address.Equals(correo.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                   correo.Contains('.');
-        }
-        catch
-        {
-            return false;
-        }
+        ContextoFormulario.NotifyValidationStateChanged();
+        return valido;
     }
 
     private void AvanzarPaso3()
     {
         MensajeError = "";
-
-        if (string.IsNullOrWhiteSpace(Formulario.NombreComprador) ||
-            string.IsNullOrWhiteSpace(Formulario.CorreoComprador) ||
-            string.IsNullOrWhiteSpace(Formulario.DocumentoComprador))
+        if (ValidarFormulario())
         {
-            MensajeError = "Por favor completa todos los campos requeridos del comprador.";
-            return;
+            PasoActual = 3;
         }
-
-        if (!EsCorreoValido(Formulario.CorreoComprador))
-        {
-            MensajeError = "Por favor ingresa un correo electrónico válido para el comprador (ejemplo: usuario@correo.com).";
-            return;
-        }
-
-        for (int i = 0; i < Formulario.Asistentes.Count; i++)
-        {
-            var a = Formulario.Asistentes[i];
-            if (string.IsNullOrWhiteSpace(a.NombreCompleto) ||
-                string.IsNullOrWhiteSpace(a.DocumentoIdentidad) ||
-                string.IsNullOrWhiteSpace(a.CorreoElectronico))
-            {
-                MensajeError = $"Por favor completa los datos obligatorios del Asistente #{i + 1}.";
-                return;
-            }
-
-            if (!EsCorreoValido(a.CorreoElectronico))
-            {
-                MensajeError = $"El correo electrónico del Asistente #{i + 1} no tiene un formato válido (ejemplo: usuario@correo.com).";
-                return;
-            }
-        }
-
-        Formulario.MontoTotal = SubtotalCalculado;
-        PasoActual = 3;
     }
 
     private async Task RedirigirAWompiConPrecio()
     {
+        if (CreandoOrden)
+        {
+            return;
+        }
+
+        CreandoOrden = true;
         MensajeError = "";
         try
         {
-            Formulario.MontoTotal = SubtotalCalculado;
-            var checkoutWompi = await CompraService.CrearCompraPendienteAsync(Formulario);
-
-            if (checkoutWompi != null && checkoutWompi.CompraId > 0)
+            var usuario = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+            if (!AccesoCompra.HasBrowser(usuario))
             {
-                Navigation.NavigateTo($"/pagos/wompi/{checkoutWompi.CompraId}", forceLoad: true);
+                MensajeError = "No se pudo iniciar la sesión de compra. Recarga la página y verifica que el navegador acepte cookies.";
+                return;
+            }
+
+            if (CompraWompiId is null)
+            {
+                if (!ValidarFormulario())
+                {
+                    PasoActual = 2;
+                    return;
+                }
+
+                var orden = await CompraService.CrearCompraPendienteAsync(Formulario);
+                CompraWompiId = orden.CompraId;
+            }
+
+            var compraId = CompraWompiId.Value;
+            await using var modulo = await JS.InvokeAsync<IJSObjectReference>("import", "./js/compra-access.js");
+            await modulo.InvokeVoidAsync("activar", compraId, AccesoCompra.CreateHandoff(usuario, compraId));
+            Navigation.NavigateTo($"pagos/wompi/{compraId}", forceLoad: true);
+        }
+        catch (ValidationException ex)
+        {
+            var campos = ex.ValidationResult?.MemberNames ?? [];
+            foreach (var campo in campos)
+            {
+                ErroresFormulario.Add(ContextoFormulario.Field(campo), ex.Message);
+            }
+
+            if (campos.Any())
+            {
+                PasoActual = 1;
+                ContextoFormulario.NotifyValidationStateChanged();
             }
             else
             {
-                MensajeError = "No se pudo generar la orden para conectar con Wompi.";
+                MensajeError = ex.Message;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            MensajeError = $"Atención: {ex.Message}";
+            MensajeError = "No se pudo continuar con la orden. Intenta nuevamente.";
+        }
+        finally
+        {
+            CreandoOrden = false;
         }
     }
 }

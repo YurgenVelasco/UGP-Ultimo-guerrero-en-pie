@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Acceso privado — UGP</title>
+</head>
+<body>
+    <main>
+        <h1>Acceso privado UGP</h1>
+        @if (Error) { <p role="alert">No fue posible iniciar sesión. Revisa tus datos o consulta al responsable del sistema.</p> }
+        <form action="@Action" method="post" data-enhance="false">
+            <AntiforgeryToken />
+            <p><label for="usuario">Usuario</label><input id="usuario" name="usuario" autocomplete="username" maxlength="256" required /></p>
+            <p><label for="clave">Contraseña</label><input id="clave" name="clave" type="password" autocomplete="current-password" maxlength="256" required /></p>
+            <p><label for="codigo">Código del autenticador (si está habilitado)</label><input id="codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="10" /></p>
+            <button type="submit">Iniciar sesión</button>
+        </form>
+        <p>No se permite el registro público de cuentas administrativas.</p>
+        <a href="/">Volver al sitio público</a>
+    </main>
+</body>
+</html>
+@code {
+    [Parameter] public string Action { get; set; } = "";
+    [Parameter] public bool Error { get; set; }
+}

@@ -1,0 +1,39 @@
+@namespace UGP_ultimo_guerrero_en_pie_.Components.Multimedia
+
+<section class="gallery-carousel" aria-label="@Title" aria-roledescription="carrusel" tabindex="0" @onkeydown="KeyDown">
+    <h3>@Title</h3>
+    @if (Items.Count > 0)
+    {
+        <div class="slide" @key="Index">
+            <MediaCard Item="Items[Index]" />
+        </div>
+        @if (Items.Count > 1)
+        {
+            <div class="controls">
+                <button type="button" aria-label="Recurso anterior" @onclick="() => Move(-1)">←</button>
+                <span aria-live="polite" aria-atomic="true">@(Index + 1) / @Items.Count</span>
+                <button type="button" aria-label="Recurso siguiente" @onclick="() => Move(1)">→</button>
+            </div>
+            <div class="indicators" aria-label="Seleccionar recurso">
+                @for (var i = 0; i < Items.Count; i++)
+                {
+                    var target = i;
+                    <button type="button" aria-label="Mostrar recurso @(i + 1)" aria-current="@(Index == i ? "true" : null)" @onclick="() => Index = target">@(i + 1)</button>
+                }
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<GalleryMedia> Items { get; set; } = [];
+    [Parameter] public string Title { get; set; } = "Galería UGP";
+    private int Index;
+    protected override void OnParametersSet() { if (Index >= Items.Count) Index = 0; }
+    private void Move(int delta) { if (Items.Count > 0) Index = (Index + delta + Items.Count) % Items.Count; }
+    private void KeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "ArrowLeft") Move(-1);
+        else if (e.Key == "ArrowRight") Move(1);
+    }
+}

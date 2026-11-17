@@ -1,0 +1,6 @@
+.gallery-carousel{min-width:0;margin:2rem 0;color:#eee}.gallery-carousel:focus-visible{outline:2px solid #dab56b;outline-offset:5px}
+h3{font-family:Oswald,sans-serif;color:#dab56b;font-size:1.35rem}.controls,.indicators{display:flex;justify-content:center;align-items:center;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+button{min-width:44px;min-height:44px;border:1px solid #a78643;border-radius:50%;background:#151515;color:#eee;padding:.4rem}
+button[aria-current=true]{background:#dab56b;color:#111}button:focus-visible{outline:3px solid white;outline-offset:3px}
+.slide{animation:reveal .2s ease-out}@keyframes reveal{from{opacity:.5;transform:translateX(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.slide{animation:none}}

@@ -1,0 +1,21 @@
+{
+  "scripts": [
+    {
+      "id": "baseline",
+      "file": "UGP_Database_Schema.sql",
+      "sha256": "a7fe08d90752e1cf438fede2d574810368973b42d4284e62e289437d999fb3e1",
+      "order": 1
+    },
+    {
+      "id": "UGP_0002",
+      "file": "UGP_0002_ReservasPagos.sql",
+      "sha256": "9e801b8d855a9ae5f9ad24a7b0a7b961de75988213a3cc06324a6e95ec0b6320",
+      "order": 2
+    }
+  ],
+  "blocked": [
+    "UGP_0003_AdopcionReservasHistoricas.sql"
+  ],
+  "bootstrapSha256": "7822C1D3AA1695CD8AEAA1E26F14EC9093FACF560FE1360BC1BB99F67D9E2850",
+  "targets": [{"server":"(localdb)\\MSSQLLocalDB","database":"UGP_Integracion_Test"}]
+}

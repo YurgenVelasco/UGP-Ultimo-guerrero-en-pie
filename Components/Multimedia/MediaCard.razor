@@ -1,0 +1,40 @@
+@namespace UGP_ultimo_guerrero_en_pie_.Components.Multimedia
+
+<figure class="media-card">
+    @if (Item.IsVideo)
+    {
+        @if (Playing)
+        {
+            <iframe src="@Item.Url" title="@Item.Title" loading="lazy" referrerpolicy="no-referrer"
+                    allow="fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+            <button type="button" @onclick="() => Playing = false">Cerrar video</button>
+        }
+        else
+        {
+            <div class="video-cover">
+                <button type="button" @onclick="() => Playing = true">Cargar video: @Item.Title</button>
+                <small>Al cargar el video se establece una conexión con YouTube.</small>
+            </div>
+        }
+    }
+    else if (Failed)
+    {
+        <p class="video-cover" role="status">La imagen no está disponible.</p>
+    }
+    else
+    {
+        <img src="@Item.Url" alt="@Item.Title" loading="lazy" decoding="async" referrerpolicy="no-referrer" @onerror="() => Failed = true" />
+    }
+    <figcaption>@Item.Title</figcaption>
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public GalleryMedia Item { get; set; } = default!;
+    private bool Playing;
+    private bool Failed;
+    private GalleryMedia? Previous;
+    protected override void OnParametersSet()
+    {
+        if (Previous != Item) { Playing = false; Failed = false; Previous = Item; }
+    }
+}

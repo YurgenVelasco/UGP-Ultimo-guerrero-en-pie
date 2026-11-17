@@ -1,0 +1,46 @@
+@page "/administracion/localidades"
+@page "/administracion/localidades/{TipoId:int}"
+@inherits CatalogPageBase
+<PageTitle>Localidades — Administración UGP</PageTitle>
+<section class="admin-page">
+    <header class="page-heading"><div><span class="eyebrow">Entradas / Catálogo</span><h1>Catálogo de localidades</h1><p>Tipos de entrada globales. Un catálogo compartido, sin duplicar inventario.</p></div><a class="btn btn-outline-light" href="/administracion/eventos">Ver eventos</a></header>
+    <div class="breadcrumb-links"><a href="/administracion">Resumen</a><a href="/administracion/localidades">Crear localidad</a></div>
+    <p class="admin-notice">El nombre es único en todo UGP. El precio y la capacidad son globales: las localidades asociadas a varios eventos tienen la edición protegida. No se eliminan ni desactivan.</p>
+    @if(Error is not null){<p role="alert" class="text-warning">@Error</p>}
+    @if(Ready && Form is not null)
+    {
+        <EditForm Model="Form" FormName="localidad" OnValidSubmit="SaveLocality" class="panel">
+            <div class="panel-title"><h2>@(TipoId==0 ? "Crear localidad" : "Editar tipo global")</h2><p>@(TipoId==0 ? "Nuevo registro en el catálogo" : "Localidad #"+TipoId)</p></div>
+            <DataAnnotationsValidator /><ValidationSummary />
+            <input type="hidden" name="Form.Version" value="@Form.Version" />
+            <div class="row g-3">
+                <div class="col-12 col-md-6"><label for="type-name">Nombre global</label><InputText id="type-name" class="form-control" @bind-Value="Form.Nombre" maxlength="50" required /><ValidationMessage For="@(()=>Form.Nombre)" /></div>
+                <div class="col-12 col-md-3"><label for="type-price">Precio COP</label><InputNumber ParsingErrorMessage="Introduce un precio válido." id="type-price" class="form-control" @bind-Value="Form.Precio" step="0.01" min="0.01" /><ValidationMessage For="@(()=>Form.Precio)" /></div>
+                <div class="col-12 col-md-3"><label for="type-capacity">Capacidad global por evento</label><InputNumber ParsingErrorMessage="Introduce una capacidad válida." id="type-capacity" class="form-control" @bind-Value="Form.Capacidad" min="1" max="1000000" /><ValidationMessage For="@(()=>Form.Capacidad)" /></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-warning" type="submit">Guardar localidad</button><a class="btn btn-outline-light" href="/administracion/localidades">Volver al catálogo</a></div>
+        </EditForm>
+        <div class="panel-title"><h2>Localidades existentes <span class="badge-state">@Rows.Count tipos</span></h2><p>Hasta 500 registros · Asociación desde cada evento</p></div>
+        @if(Rows.Count==0){<div class="empty-state" role="status"><h2>Aún no hay localidades</h2><p>Completa el formulario para crear un tipo de entrada.</p></div>}
+        <div class="catalog-grid">@foreach(var t in Rows){<article class="catalog-card">
+            <div class="card-top"><span class="record-id">LOCALIDAD #@t.Id</span><span class="badge-state">@(t.Eventos>1 ? "Compartida" : t.Eventos==1 ? "Un evento" : "Sin asociar")</span></div>
+            <h3><a href="@($"/administracion/localidades/{t.Id}")">@t.Nombre</a></h3>
+            <dl class="card-facts"><div><dt>Precio · COP</dt><dd>@t.Precio.ToString("N2")</dd></div><div><dt>Capacidad</dt><dd>@t.Capacidad</dd></div></dl>
+            <p>@t.Eventos eventos asociados</p>
+            @if(t.Eventos>1){<p>Edición bloqueada para proteger los eventos asociados.</p>}
+            <div class="card-actions"><a href="@($"/administracion/localidades/{t.Id}")">Consultar localidad →</a></div>
+        </article>}</div>
+    }
+</section>
+@code {
+    [Parameter] public int TipoId {get;set;}
+    [SupplyParameterFromForm(FormName="localidad")] public AdminLocalityForm? Form {get;set;}
+    private List<AdminLocalityRow> Rows=[];
+    protected override Task OnInitializedAsync()=>Initialize(async ()=>
+    {
+        Rows=await Catalog.LocalitiesAsync(User);
+        if(TipoId==0) Form ??= new();
+        else { var loaded=await Catalog.LocalityAsync(User,TipoId); if(loaded is null){Context.Response.StatusCode=404;throw new ValidationException("Localidad no encontrada.");} Form ??= loaded; }
+    });
+    private Task SaveLocality()=>Save(async ()=>"/administracion/localidades/"+await Catalog.SaveLocalityAsync(User,TipoId,Form!));
+}

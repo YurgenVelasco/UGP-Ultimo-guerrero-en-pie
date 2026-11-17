@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -44,22 +43,16 @@ public class TicketPdfService : ITicketPdfService
 
         var asistente = ticket.Asistente ?? new Asistente
         {
-            Nombre = ticket.Compra?.Visitante?.Nombre ?? "Asistente Oficial",
+            Nombre = "Asistente Oficial",
             Apellido = "",
             TipoDocumento = "CC",
             NumeroDocumento = "000000000",
             Correo = ticket.Compra?.Visitante?.Correo ?? ""
         };
 
-        byte[] qrBytes = Array.Empty<byte>();
-        if (!string.IsNullOrWhiteSpace(ticket.QrPath) && File.Exists(Path.Combine("wwwroot", ticket.QrPath)))
-        {
-            qrBytes = await File.ReadAllBytesAsync(Path.Combine("wwwroot", ticket.QrPath));
-        }
-        else if (!string.IsNullOrWhiteSpace(ticket.CodigoQr))
-        {
-            qrBytes = _qr.GenerarQr(ticket.CodigoQr);
-        }
+        var qrBytes = string.IsNullOrWhiteSpace(ticket.CodigoQr)
+            ? Array.Empty<byte>()
+            : _qr.GenerarQr(ticket.CodigoQr);
 
         return GenerarTicket(ticket, ticket.Evento, asistente, qrBytes);
     }
@@ -176,7 +169,6 @@ public class TicketPdfService : ITicketPdfService
                         r.RelativeItem().Column(c =>
                         {
                             c.Item().Text($"Orden de Compra: #{compra.CompraId}").Bold().FontSize(13);
-                            c.Item().Text($"Comprador: {visitante.Nombre}").FontSize(10);
                             c.Item().Text($"Correo: {visitante.Correo}").FontSize(10);
                             c.Item().Text($"Fecha de Compra: {compra.FechaCompra:dd/MM/yyyy HH:mm}").FontSize(10);
                         });

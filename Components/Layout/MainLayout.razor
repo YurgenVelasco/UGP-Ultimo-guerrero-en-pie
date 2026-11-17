@@ -11,90 +11,39 @@
 
     <!-- Botón Flotante de WhatsApp para Soporte -->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
-        <a href="https://wa.me/573175263899?text=Hola,%20deseo%20más%20información%20sobre%20los%20eventos%20de%20UGP" 
+        <a href="https://wa.me/573006904099"
            target="_blank" 
            rel="noopener noreferrer" 
            class="btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
            style="width: 56px; height: 56px; background-color: #25D366; border: 2px solid #D4AF37; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);" 
-           title="Atención al Cliente por WhatsApp">
+           aria-label="Consultar eventos y entradas por WhatsApp">
             <i class="bi bi-whatsapp fs-3 text-white"></i>
         </a>
     </div>
 
-    <!-- Footer Oficial UGP -->
-    <footer class="ugp-footer">
+    <footer class="site-footer">
         <div class="container">
-            <div class="row g-4 mb-5">
-                <!-- Columna 1: Marca y Misión -->
-                <div class="col-lg-4 col-md-6">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <img src="images/ugp-logo-default.svg" alt="UGP Logo" height="48" />
-                        <span class="fs-4 fw-bold text-white font-monospace" style="font-family: var(--font-heading);">UGP</span>
-                    </div>
-                    <p class="text-secondary small pe-lg-4" style="line-height: 1.7;">
-                        <strong>Ultimate Grappling Promotion (UGP)</strong> es la liga élite de deportes de combate, grappling y artes marciales mixtas en Latinoamérica. Enfrentamos a los atletas más implacables del continente por la gloria suprema.
-                    </p>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="ugp-social-btn" title="Instagram">
-                            <i class="bi bi-instagram"></i>
-                        </a>
-                        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="ugp-social-btn" title="YouTube">
-                            <i class="bi bi-youtube"></i>
-                        </a>
-                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="ugp-social-btn" title="Facebook">
-                            <i class="bi bi-facebook"></i>
-                        </a>
-                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="ugp-social-btn" title="X / Twitter">
-                            <i class="bi bi-twitter-x"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Columna 2: Enlaces Rápidos -->
-                <div class="col-lg-2 col-md-6 col-6">
-                    <h5>Navegación</h5>
-                    <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <li><a href="">Inicio</a></li>
-                        <li><a href="#eventos">Cartelera de Eventos</a></li>
-                        <li><a href="#peleadores">Roster de Guerreros</a></li>
-                        <li><a href="#experiencias">Experiencia Fan</a></li>
-                        <li><a href="#patrocinadores">Patrocinadores</a></li>
-                    </ul>
-                </div>
-
-                <!-- Columna 3: Información y Políticas -->
-                <div class="col-lg-3 col-md-6 col-6">
-                    <h5>Información</h5>
-                    <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <li><a href="#terminos">Reglamento de Combate</a></li>
-                        <li><a href="#terminos">Términos y Condiciones</a></li>
-                        <li><a href="#privacidad">Política de Privacidad</a></li>
-                        <li><a href="#validar-boleto">Verificación de Boletos</a></li>
-                        <li><a href="#contacto">Contacto & Prensa</a></li>
-                    </ul>
-                </div>
-
-                <!-- Columna 4: Canal Oficial WhatsApp & Boletos -->
-                <div class="col-lg-3 col-md-6">
-                    <h5>Boletos & Soporte</h5>
-                    <p class="text-secondary small mb-3">
-                        ¿Preguntas sobre boletos o acceso a eventos? Escríbenos directamente a nuestro canal oficial de WhatsApp.
-                    </p>
-                    <a href="https://wa.me/573000000000" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-2">
-                        <i class="bi bi-whatsapp"></i> Chat WhatsApp Oficial
-                    </a>
-                    <div class="small text-muted mt-2">
-                        <i class="bi bi-shield-check text-warning me-1"></i> Boletos protegidos con HMAC-SHA256
-                    </div>
-                </div>
-            </div>
-
-            <!-- Copyright inferior -->
-            <div class="border-top border-secondary pt-3 text-center text-secondary small">
-                <p class="mb-0">
-                    &copy; @DateTime.UtcNow.Year <strong>Ultimate Grappling Promotion (UGP)</strong>. Todos los derechos reservados.
-                </p>
-            </div>
+            <a class="footer-brand" href="/">
+                <img src="images/ugp/logo.png" alt="Último Guerrero en Pie — Inicio" />
+            </a>
+            <nav class="footer-links" aria-label="Boletos y eventos">
+                <a href="/#eventos">Eventos</a>
+                <a href="/peleadores">Peleadores</a>
+                <a href="/contacto">Contacto</a>
+                <a href="/preguntas-frecuentes">Preguntas frecuentes</a>
+                <a href="/#experiencias">Experiencias</a>
+                <a href="/#patrocinadores">Patrocinadores</a>
+                <a href="/checkout/confirmacion">Mis boletos</a>
+                <a href="/#validar-boleto">Validar boleto</a>
+            </nav>
+            <nav class="footer-links footer-social" aria-label="Redes sociales">
+                <a href="https://www.facebook.com/ultimoguerreroenpie">Facebook</a>
+                <a href="https://www.instagram.com/ultimoguerreroenpie">Instagram</a>
+                <a href="https://www.tiktok.com/@@ultimoguerreroenpie">TikTok</a>
+                <a href="https://www.youtube.com/@@UGP-%C3%9AltimoGuerreroenPie-u2k">YouTube</a>
+                <a href="https://wa.me/573006904099">WhatsApp</a>
+            </nav>
+            <p class="footer-copyright">© @DateTime.UtcNow.Year Último Guerrero en Pie</p>
         </div>
     </footer>
 </div>

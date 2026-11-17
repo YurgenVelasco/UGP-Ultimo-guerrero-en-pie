@@ -9,8 +9,7 @@ public interface ITicketService
 {
     Task<List<Ticket>> GenerarTickets(Compra compra, List<DetalleCompraVm> detalles, List<AsistenteVm> asistentes);
     Task<TicketVm?> ObtenerTicket(int ticketId);
-    Task<ValidarTicketVm?> ValidarCodigo(string codigoUnico);
-    Task<ValidarTicketVm?> ValidarQrContenido(string qrContent);
+    Task<bool> EsQrAutenticoAsync(string qrContent);
     Task<ValidarTicketVm> UsarTicket(int ticketId);
     Task<byte[]> RegenerarQr(int ticketId);
     Task<long> ObtenerSiguienteFolioAsync();

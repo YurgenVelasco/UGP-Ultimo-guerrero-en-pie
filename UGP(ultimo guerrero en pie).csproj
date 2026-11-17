@@ -2,12 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <UserSecretsId>UGP-ultimo-guerrero-en-pie</UserSecretsId>
     <Nullable>enable</Nullable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**</DefaultItemExcludes>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>UGP_ultimo_guerrero_en_pie_</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tests/**/*.cs" />
+    <Content Remove="Tests/**" />
+    <None Remove="Tests/**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MailKit" Version="4.17.*" />

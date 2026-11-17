@@ -1,0 +1,42 @@
+@page "/administracion"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using UGP_ultimo_guerrero_en_pie_.Services.Administration
+@inject AdminOperations Operations
+@inherits CatalogPageBase
+
+<PageTitle>Administración privada — UGP</PageTitle>
+<section class="admin-page">
+    <header class="page-heading"><div><span class="eyebrow">Centro de operaciones</span><h1>Administración UGP</h1><p>Tu próximo evento comienza aquí. Organiza la cartelera y su catálogo de entradas.</p></div><a class="btn btn-warning" href="/administracion/eventos/nuevo">+ Crear evento</a></header>
+    @if(Error is not null){<p role="alert">@Error</p>}
+    @if(Ready)
+    {
+        <div class="metric-grid">
+            <article class="metric"><span>Eventos consultados</span><strong>@Events.Count</strong><small>Últimos 200 registros como máximo</small></article>
+            <article class="metric"><span>Localidades en catálogo</span><strong>@Types.Count</strong><small>Hasta 500 tipos globales</small></article>
+            <article class="metric"><span>Localidades compartidas</span><strong>@Types.Count(t=>t.Eventos>1)</strong><small>Dentro del catálogo consultado</small></article>
+        </div>
+        <div class="panel"><div class="panel-title"><h2>Gestiona tu cartelera</h2><p>Información consultada desde UGP</p></div>
+            <div class="catalog-grid">
+                <article class="catalog-card"><span class="eyebrow">01 / Eventos</span><h2>Prepara cada encuentro</h2><p>Consulta fechas, lugares, estados y disponibilidad de tu cartelera.</p><div class="card-actions"><a href="/administracion/eventos">Administrar eventos →</a></div></article>
+                <article class="catalog-card"><span class="eyebrow">02 / Localidades</span><h2>Organiza las entradas</h2><p>Consulta tipos globales, precios y asociaciones entre eventos.</p><div class="card-actions"><a href="/administracion/localidades">Catálogo de localidades →</a></div></article>
+                <article class="catalog-card"><span class="eyebrow">Control de acceso</span><h2>Un espacio privado</h2><p>Las operaciones conservan la autorización administrativa y los controles de inventario existentes.</p></article>
+            </div>
+        </div>
+        <div class="panel"><div class="panel-title"><h2>Eventos recientes en la consulta</h2><a href="/administracion/eventos" class="admin-public-link">Ver listado completo →</a></div>
+        @if(Events.Count==0){<div class="empty-state"><h2>Aún no hay eventos</h2><p>Crea el primer evento para comenzar a organizar tu cartelera.</p></div>}
+        else {<div class="catalog-grid">@foreach(var e in Events.Take(3)){<article class="catalog-card"><div class="card-top"><span class="record-id">EVENTO #@e.EventoId</span><span class="badge-state">@e.EstadoEvento</span></div><h3>@e.Nombre</h3><p>@e.Fecha.ToString("dd/MM/yyyy") · @e.Hora.ToString("HH:mm")</p><div class="card-actions"><a href="@($"/administracion/eventos/{e.EventoId}")">Consultar evento →</a></div></article>}</div>}
+        </div>
+    }
+    else if(Error is null){<p role="status" class="loading-state">Consultando el resumen administrativo…</p>}
+</section>
+@code {
+    private List<Evento> Events=[];
+    private List<AdminLocalityRow> Types=[];
+    protected override Task OnInitializedAsync()=>Initialize(async ()=>
+    {
+        await Operations.ReadStatusAsync(User);
+        Events=await Catalog.EventsAsync(User);
+        Types=await Catalog.LocalitiesAsync(User);
+    });
+}

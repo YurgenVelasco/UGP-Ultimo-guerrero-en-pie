@@ -1,0 +1,4 @@
+.multimedia-gallery{padding:3rem 0;background:#090909;color:#ddd;border-block:1px solid #4b3d22}
+h2{font-family:Oswald,sans-serif;color:#dab56b;text-transform:uppercase}.gallery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem}.gallery-grid>div{min-width:0}p{overflow-wrap:anywhere}
+button{min-height:44px;background:#dab56b;color:#111;border:0;border-radius:.4rem;padding:.6rem 1rem}button:focus-visible{outline:3px solid white;outline-offset:3px}
+@media(max-width:767px){.gallery-grid{grid-template-columns:minmax(0,1fr);gap:1rem}.multimedia-gallery{padding:2rem 0}}

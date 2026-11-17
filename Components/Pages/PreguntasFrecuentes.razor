@@ -1,0 +1,66 @@
+@page "/preguntas-frecuentes"
+@rendermode InteractiveServer
+
+<PageTitle>Preguntas frecuentes | UGP</PageTitle>
+
+<div class="container public-page">
+    <header class="public-heading">
+        <p class="public-eyebrow">Último Guerrero en Pie</p>
+        <h1>Preguntas <span>frecuentes</span></h1>
+    </header>
+
+    <section class="public-section faq-content" aria-labelledby="faq-title">
+        <h2 id="faq-title">Eventos y entradas</h2>
+        <label for="faq-search">Buscar preguntas</label>
+        <input id="faq-search" class="form-control faq-search" type="search" maxlength="120"
+               placeholder="Por ejemplo, entradas o QR" @bind="busqueda" @bind:event="oninput" />
+
+        @{ var resultados = Preguntas.Where(Coincide).ToArray(); }
+        <p class="faq-count" role="status">@(resultados.Length == 1 ? "1 pregunta" : $"{resultados.Length} preguntas")</p>
+        @if (resultados.Length == 0)
+        {
+            <p class="public-card">No encontramos preguntas que coincidan con tu búsqueda.</p>
+        }
+        @foreach (var pregunta in resultados)
+        {
+            <details class="public-card faq-item" @key="pregunta.Pregunta">
+                <summary>@pregunta.Pregunta</summary>
+                <p>@pregunta.Respuesta</p>
+                <a href="@pregunta.Enlace">@pregunta.TextoEnlace</a>
+            </details>
+        }
+
+        <aside class="public-card faq-pending" aria-labelledby="faq-pending-title">
+            <h2 id="faq-pending-title">Información pendiente de confirmación</h2>
+            <p>Para consultas sobre reembolsos, recuperación de entradas desde otro dispositivo, políticas de ingreso o sillas numeradas, comunícate con UGP.</p>
+            <a href="/contacto">Ver canales de contacto</a>
+        </aside>
+    </section>
+</div>
+
+@code {
+    private sealed record EntradaFaq(string Pregunta, string Respuesta, string Enlace, string TextoEnlace);
+    private static readonly System.Globalization.CompareInfo Comparador =
+        System.Globalization.CultureInfo.GetCultureInfo("es-CO").CompareInfo;
+    private const System.Globalization.CompareOptions Opciones =
+        System.Globalization.CompareOptions.IgnoreCase | System.Globalization.CompareOptions.IgnoreNonSpace;
+
+    private static readonly EntradaFaq[] Preguntas =
+    [
+        new("¿Cómo compro entradas?", "Abre la cartelera, elige un evento con entradas disponibles y selecciona la localidad y la cantidad en el checkout.", "/#eventos", "Ver cartelera"),
+        new("¿Qué eventos hay próximos?", "La cartelera reúne los eventos publicados con sus fechas y lugares.", "/#eventos", "Consultar eventos"),
+        new("¿Dónde se realizan los eventos?", "Consulta el lugar y el horario en la tarjeta del evento al que quieres asistir.", "/#eventos", "Ver lugares y horarios"),
+        new("¿Cómo consulto mis boletos?", "Usa la referencia de la compra desde el mismo navegador en el que la hiciste. Los boletos se muestran cuando el pago está confirmado.", "/checkout/confirmacion", "Ir a Mis boletos"),
+        new("¿Cómo verifico el código QR de un boleto?", "Ingresa el contenido completo del QR en el verificador público. La consulta comprueba su autenticidad.", "/#validar-boleto", "Ir a Validar boleto")
+    ];
+
+    private string busqueda = "";
+
+    private bool Coincide(EntradaFaq pregunta)
+    {
+        var termino = busqueda.Trim();
+        return termino.Length == 0 ||
+            Comparador.IndexOf(pregunta.Pregunta, termino, Opciones) >= 0 ||
+            Comparador.IndexOf(pregunta.Respuesta, termino, Opciones) >= 0;
+    }
+}

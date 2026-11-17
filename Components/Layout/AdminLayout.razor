@@ -1,0 +1,30 @@
+@inherits LayoutComponentBase
+@using UGP_ultimo_guerrero_en_pie_.Components.Administration
+
+<div class="admin-shell">
+    <a class="admin-skip" href="#admin-main">Saltar al contenido</a>
+    <aside class="admin-sidebar">
+        <a href="/administracion" class="admin-brand"><img src="/images/ugp/logo.png" alt="UGP — Panel administrativo" /></a>
+        <p class="admin-overline">Centro de gestión</p>
+        <AdminNavigation />
+        <div class="admin-sidebar-note"><span class="admin-dot"></span> Acceso privado<p>Organiza cada evento.<br />Cuida cada detalle.</p></div>
+        <a class="admin-public-link" href="/">↗ Ver sitio público</a>
+    </aside>
+    <div class="admin-workspace">
+        <header class="admin-topbar">
+            <a href="/administracion" class="admin-mobile-brand"><img src="/images/ugp/logo.png" alt="UGP — Administración" /></a>
+            <span class="admin-topbar-label">UGP <span>/</span> Administración</span>
+            <form method="post" action="/administracion/salir" data-enhance="false">
+                <AntiforgeryToken />
+                <button type="submit" class="admin-logout">Cerrar sesión <span aria-hidden="true">↗</span></button>
+            </form>
+        </header>
+        <details class="admin-mobile-nav">
+            <summary>Menú administrativo</summary>
+            <AdminNavigation />
+            <a href="/" class="admin-public-link">Ver sitio público ↗</a>
+        </details>
+        <main id="admin-main" class="admin-main" tabindex="-1">@Body</main>
+        <footer class="admin-footer"><span>Último Guerrero en Pie</span><span>Gestión de eventos · UGP</span></footer>
+    </div>
+</div>

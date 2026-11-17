@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using UGP_ultimo_guerrero_en_pie_.Data;
 using UGP_ultimo_guerrero_en_pie_.Models.Entities;
 using UGP_ultimo_guerrero_en_pie_.Models.Enums;
@@ -28,6 +28,7 @@ public class TicketService : ITicketService
         var connection = _db.Database.GetDbConnection();
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT NEXT VALUE FOR seq_ticket_codigo;";
+        command.Transaction = _db.Database.CurrentTransaction?.GetDbTransaction();
 
         if (connection.State != System.Data.ConnectionState.Open)
         {
@@ -72,17 +73,6 @@ public class TicketService : ITicketService
                 var tokenHash = _qr.GenerarTokenHash(folio, fecha, codigoUnico);
                 var contenidoQr = $"UGP|{codigoUnico}|{compra.EventoId}|{folio}|{tokenHash}";
 
-                var qrBytes = _qr.GenerarQr(contenidoQr);
-                var qrDir = Path.Combine("wwwroot", "uploads", "qr");
-                if (!Directory.Exists(qrDir))
-                {
-                    Directory.CreateDirectory(qrDir);
-                }
-
-                var qrFile = $"qr-{codigoUnico}.png";
-                var qrFullPath = Path.Combine(qrDir, qrFile);
-                await File.WriteAllBytesAsync(qrFullPath, qrBytes);
-
                 var ticket = new Ticket
                 {
                     CompraId = compra.CompraId,
@@ -95,8 +85,7 @@ public class TicketService : ITicketService
                     Zona = zona,
                     Precio = precio,
                     Estado = EstadoTicket.Activo.ToString(),
-                    FechaGeneracion = fecha,
-                    QrPath = $"uploads/qr/{qrFile}"
+                    FechaGeneracion = fecha
                 };
 
                 tickets.Add(ticket);
@@ -150,72 +139,33 @@ public class TicketService : ITicketService
             }).FirstOrDefaultAsync();
     }
 
-    public async Task<ValidarTicketVm?> ValidarCodigo(string codigoUnico)
-    {
-        var t = await _db.Tickets.AsNoTracking()
-            .Include(t => t.Evento)
-            .Include(t => t.Compra).ThenInclude(c => c.Visitante)
-            .Include(t => t.Asistente)
-            .FirstOrDefaultAsync(t => t.CodigoUnico == codigoUnico);
-
-        if (t is null) return null;
-        return MapearValidacion(t);
-    }
-
-    public async Task<ValidarTicketVm?> ValidarQrContenido(string qrContent)
+    public async Task<bool> EsQrAutenticoAsync(string qrContent)
     {
         // Formato: UGP|{CodigoUnico}|{EventoId}|{Folio}|{TokenHash}
-        var partes = qrContent.Split('|');
-        if (partes.Length < 5 || partes[0] != "UGP")
-        {
-            return new ValidarTicketVm
-            {
-                Existe = false,
-                Mensaje = "Formato de código QR inválido o no reconocido por UGP."
-            };
-        }
+        var partes = string.IsNullOrEmpty(qrContent) || qrContent.Length > 128 ? [] : qrContent.Split('|');
+        if (partes.Length != 5 || partes[0] != "UGP" || partes[1].Length is < 1 or > 30 ||
+            !int.TryParse(partes[2], out var eventoId) || eventoId <= 0 ||
+            !long.TryParse(partes[3], out var folio) || folio <= 0 ||
+            partes[4].Length != 64 || !partes[4].All(Uri.IsHexDigit))
+            return false;
 
-        var codigoUnico = partes[1];
-        if (!long.TryParse(partes[3], out var folio))
-        {
-            return new ValidarTicketVm
-            {
-                Existe = false,
-                Mensaje = "Identificador de folio corrupto en el código QR."
-            };
-        }
-
-        var tokenHash = partes[4];
-
+        var codigo = partes[1];
         var ticket = await _db.Tickets.AsNoTracking()
-            .Include(t => t.Evento)
-            .Include(t => t.Compra).ThenInclude(c => c.Visitante)
-            .Include(t => t.Asistente)
-            .FirstOrDefaultAsync(t => t.CodigoUnico == codigoUnico);
+            .Where(t => t.CodigoUnico == codigo && t.EventoId == eventoId && t.CodigoQr == qrContent &&
+                t.Compra.EstadoPago == EstadoCompra.Aprobado.ToString())
+            .Select(t => new { t.CodigoQr, t.FechaGeneracion })
+            .FirstOrDefaultAsync();
 
-        if (ticket is null)
-        {
-            return new ValidarTicketVm
-            {
-                Existe = false,
-                Mensaje = "Boleto no registrado en la base de datos de UGP."
-            };
-        }
+        if (ticket?.FechaGeneracion is not { } fecha ||
+            !string.Equals(ticket.CodigoQr, qrContent, StringComparison.OrdinalIgnoreCase))
+            return false;
 
-        // Validación criptográfica con HMAC-SHA256
-        var fechaGen = ticket.FechaGeneracion ?? DateTime.UtcNow;
-        var esFirmaValida = _qr.ValidarTokenHash(folio, fechaGen, codigoUnico, tokenHash);
-
-        if (!esFirmaValida)
-        {
-            var resInvalido = MapearValidacion(ticket);
-            resInvalido.Existe = false;
-            resInvalido.Mensaje = "ALERTA DE SEGURIDAD: La firma digital del código QR no coincide o fue manipulada.";
-            return resInvalido;
-        }
-
-        return MapearValidacion(ticket);
+        // SQL datetime puede redondear los últimos milisegundos al segundo siguiente.
+        return _qr.ValidarTokenHash(folio, fecha, codigo, partes[4]) ||
+            (fecha.Ticks % TimeSpan.TicksPerSecond == 0 && fecha > DateTime.MinValue &&
+                _qr.ValidarTokenHash(folio, fecha.AddSeconds(-1), codigo, partes[4]));
     }
+
 
     public async Task<ValidarTicketVm> UsarTicket(int ticketId)
     {

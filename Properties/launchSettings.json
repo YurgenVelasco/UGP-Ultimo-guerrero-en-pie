@@ -1,23 +1,38 @@
 {
   "$schema": "https://json.schemastore.org/launchsettings.json",
-    "profiles": {
-      "http": {
-        "commandName": "Project",
-        "dotnetRunMessages": true,
-        "launchBrowser": true,
-        "applicationUrl": "http://localhost:5145",
-        "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development"
-        }
-      },
-      "https": {
-        "commandName": "Project",
-        "dotnetRunMessages": true,
-        "launchBrowser": true,
-        "applicationUrl": "https://localhost:7065;http://localhost:5145",
-        "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development"
-        }
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5145",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7065;http://localhost:5145",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "admin-integracion": {
+      "environmentVariables": {
+        "Reservas__Habilitadas": "false",
+        "ConnectionStrings__DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=UGP_Integracion_Test;Integrated Security=true;Encrypt=false",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Administracion__RolPermitido": "Yurgenvelasco",
+        "Administracion__ExigirMfa": "true",
+        "Wompi__Webhooks__Habilitados": "false"
+      },
+      "applicationUrl": "https://localhost:7197",
+      "launchUrl": "acceso-ugp",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "commandName": "Project"
     }
   }
+}

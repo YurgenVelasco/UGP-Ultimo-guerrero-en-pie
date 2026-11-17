@@ -2,8 +2,8 @@
 @page "/checkout/confirmacion/{Referencia}"
 @rendermode InteractiveServer
 @inject ICompraService CompraService
-@inject ApplicationDbContext Db
-@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationState
+@using UGP_ultimo_guerrero_en_pie_.Services.Implementations
 
 <PageTitle>Confirmación de Compra y Boletos | UGP</PageTitle>
 
@@ -27,11 +27,12 @@
                     <div class="ugp-card p-5 border-secondary">
                         <i class="bi bi-search display-3 text-warning mb-3"></i>
                         <h3 class="text-white fw-bold mb-2">Consulta de Boletos UGP</h3>
-                        <p class="text-secondary small mb-4">Ingresa tu número de referencia de pago o código de folio para visualizar y descargar tus entradas oficiales.</p>
+                        <p class="text-secondary small mb-4">Ingresa la referencia desde el navegador donde realizaste la compra.</p>
 
                         <div class="input-group mb-3">
                             <input type="text" class="form-control bg-black text-white border-secondary font-monospace" 
                                    placeholder="Ej: UGP-TX-20261106-000001" 
+                                   maxlength="30"
                                    @bind="ReferenciaBusqueda" 
                                    @bind:event="oninput" 
                                    @onkeyup="ManejarEnterBusqueda" />
@@ -97,25 +98,26 @@
                                 <div>
                                     <h4 class="text-white fw-bold mb-1">Transacción en proceso de validación</h4>
                                     <p class="text-secondary small mb-3">
-                                        Estamos esperando la confirmación de la pasarela bancaria oficial de Wompi. Una vez procesado el pago, tus boletos con firma digital y códigos QR se activarán automáticamente en esta pantalla.
+                                        Tus boletos estarán disponibles cuando UGP confirme el pago con Wompi.
                                     </p>
                                     <div class="d-flex flex-wrap gap-2">
-                                        <button class="btn btn-ugp-gold btn-sm" @onclick="SimularAprobacion" disabled="@ProcesandoAprobacion">
-                                            @if (ProcesandoAprobacion)
-                                            {
-                                                <span class="spinner-border spinner-border-sm me-1"></span>
-                                                <span>Aprobando orden...</span>
-                                            }
-                                            else
-                                            {
-                                                <i class="bi bi-shield-check me-1"></i>
-                                                <span>Verificar / Simular Aprobación (Dev Mode)</span>
-                                            }
-                                        </button>
-                                        <button class="btn btn-outline-secondary btn-sm text-white" @onclick="RecargarDatos">
-                                            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar Estado
-                                        </button>
+                                        @if (!string.IsNullOrWhiteSpace(TransaccionWompi))
+                                        {
+                                            <button class="btn btn-ugp-gold btn-sm" @onclick="VerificarPago" disabled="@VerificandoPago">
+                                                @(VerificandoPago ? "Consultando Wompi..." : "Verificar pago con Wompi")
+                                            </button>
+                                        }
+                                        else if (CompraActual.EstadoPago == "Pendiente")
+                                        {
+                                            <a class="btn btn-outline-warning btn-sm" href="@($"pagos/wompi/{CompraActual.CompraId}")">
+                                                Volver al checkout de esta orden
+                                            </a>
+                                        }
                                     </div>
+                                    @if (!string.IsNullOrEmpty(EstadoVerificacion))
+                                    {
+                                        <p class="text-warning mt-2 mb-0" role="status">@EstadoVerificacion</p>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -223,14 +225,7 @@
 
                                             <div class="col-5 text-center">
                                                 <div class="bg-white p-2 rounded-2 d-inline-block shadow-sm">
-                                                    @if (!string.IsNullOrWhiteSpace(ticket.QrPath))
-                                                    {
-                                                        <img src="/@ticket.QrPath" class="img-fluid" style="width: 110px; height: 110px;" alt="Código QR @ticket.CodigoUnico" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <i class="bi bi-qr-code text-black" style="font-size: 5rem;"></i>
-                                                    }
+                                                    <img src="/api/boletos/qr/@ticket.TicketId" class="img-fluid" width="110" height="110" alt="Código QR @ticket.CodigoUnico" />
                                                 </div>
                                                 <div class="text-secondary small font-monospace mt-1" style="font-size: 0.7rem;">Cripto HMAC-SHA256</div>
                                             </div>
@@ -266,55 +261,41 @@
     public string? QueryId { get; set; }
 
     private bool Cargando = true;
-    private bool ProcesandoAprobacion = false;
+    private bool VerificandoPago;
+    private string? TransaccionWompi;
+    private string? EstadoVerificacion;
     private string MensajeError = "";
     private string ReferenciaBusqueda = "";
 
     private Compra? CompraActual;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await CargarOrdenAsync();
-    }
-
     protected override async Task OnParametersSetAsync()
     {
-        if (CompraActual == null)
-        {
-            await CargarOrdenAsync();
-        }
-    }
-
-    private async Task CargarOrdenAsync()
-    {
         Cargando = true;
+        CompraActual = null;
+        TransaccionWompi = null;
+        EstadoVerificacion = null;
         MensajeError = "";
         try
         {
-            var refFinal = !string.IsNullOrWhiteSpace(Referencia) 
-                ? Referencia 
-                : (!string.IsNullOrWhiteSpace(QueryReference) ? QueryReference : QueryId);
-
-            if (!string.IsNullOrWhiteSpace(refFinal))
+            var referencia = Referencia ?? QueryReference;
+            if (!string.IsNullOrWhiteSpace(referencia))
             {
-                CompraActual = await CompraService.ObtenerCompraPorReferenciaAsync(refFinal);
-            }
-
-            // Si aún no se encuentra y la BD tiene compras, tomar la última compra como conveniencia
-            if (CompraActual == null)
-            {
-                CompraActual = await Db.Compras
-                    .Include(c => c.Evento).ThenInclude(e => e.Venue)
-                    .Include(c => c.Visitante)
-                    .Include(c => c.Tickets).ThenInclude(t => t.Asistente)
-                    .Include(c => c.DetalleCompras).ThenInclude(d => d.TipoEntrada)
-                    .OrderByDescending(c => c.CompraId)
-                    .FirstOrDefaultAsync();
+                var usuario = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+                CompraActual = await CompraService.ObtenerCompraPorReferenciaAsync(usuario, referencia);
+                if (CompraActual is not null)
+                {
+                    TransaccionWompi = QueryId;
+                }
+                else
+                {
+                    MensajeError = "No se pudo acceder a la orden indicada.";
+                }
             }
         }
-        catch (Exception ex)
+        catch
         {
-            MensajeError = $"Error al consultar la orden: {ex.Message}";
+            MensajeError = "No se pudo consultar la orden.";
         }
         finally
         {
@@ -324,9 +305,12 @@
 
     private async Task BuscarPorReferenciaManual()
     {
-        if (string.IsNullOrWhiteSpace(ReferenciaBusqueda))
+        if (Cargando) return;
+
+        var referencia = ReferenciaBusqueda.Trim();
+        if (referencia.Length is < 1 or > 30)
         {
-            MensajeError = "Por favor ingresa una referencia o código de compra válido.";
+            MensajeError = "Ingresa la referencia de la compra.";
             return;
         }
 
@@ -334,20 +318,22 @@
         MensajeError = "";
         try
         {
-            var compra = await CompraService.ObtenerCompraPorReferenciaAsync(ReferenciaBusqueda);
+            var usuario = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+            var compra = await CompraService.ObtenerCompraPorReferenciaAsync(usuario, referencia);
             if (compra != null)
             {
                 CompraActual = compra;
-                Referencia = ReferenciaBusqueda;
+                TransaccionWompi = null;
+                EstadoVerificacion = null;
             }
             else
             {
-                MensajeError = "No se encontró ninguna compra con la referencia ingresada.";
+                MensajeError = "No se pudo acceder a la orden indicada.";
             }
         }
-        catch (Exception ex)
+        catch
         {
-            MensajeError = $"Error al buscar: {ex.Message}";
+            MensajeError = "No se pudo consultar la orden. Intenta nuevamente.";
         }
         finally
         {
@@ -363,43 +349,28 @@
         }
     }
 
-    private async Task SimularAprobacion()
+    private async Task VerificarPago()
     {
-        if (CompraActual == null) return;
+        if (VerificandoPago || CompraActual is null || string.IsNullOrWhiteSpace(TransaccionWompi))
+        {
+            return;
+        }
 
-        ProcesandoAprobacion = true;
+        VerificandoPago = true;
         try
         {
-            var exito = await CompraService.AprobarCompraYGenerarTicketsAsync(CompraActual.CompraId);
-            if (exito)
-            {
-                await RecargarDatos();
-            }
-            else
-            {
-                MensajeError = "No se pudo aprobar la compra en este momento.";
-            }
+            var usuario = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+            var referencia = WompiCheckout.Reference(CompraActual);
+            EstadoVerificacion = await CompraService.VerificarPagoWompiAsync(usuario, CompraActual.CompraId, TransaccionWompi);
+            CompraActual = await CompraService.ObtenerCompraPorReferenciaAsync(usuario, referencia);
         }
-        catch (Exception ex)
+        catch
         {
-            MensajeError = $"Error durante la aprobación: {ex.Message}";
+            EstadoVerificacion = "No se pudo verificar el pago en este momento. Reintenta la consulta.";
         }
         finally
         {
-            ProcesandoAprobacion = false;
-        }
-    }
-
-    private async Task RecargarDatos()
-    {
-        if (CompraActual != null)
-        {
-            CompraActual = await Db.Compras
-                .Include(c => c.Evento).ThenInclude(e => e.Venue)
-                .Include(c => c.Visitante)
-                .Include(c => c.Tickets).ThenInclude(t => t.Asistente)
-                .Include(c => c.DetalleCompras).ThenInclude(d => d.TipoEntrada)
-                .FirstOrDefaultAsync(c => c.CompraId == CompraActual.CompraId);
+            VerificandoPago = false;
         }
     }
 }

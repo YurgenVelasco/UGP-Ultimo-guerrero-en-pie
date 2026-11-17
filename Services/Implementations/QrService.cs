@@ -13,8 +13,13 @@ public class QrService : IQrService
 
     public QrService(IConfiguration configuration)
     {
-        _secretKey = configuration["TicketSecurity:SecretKey"] 
-            ?? "UGP-SuperSecret-TicketKey-2026-Grappling-Production!";
+        var secretKey = configuration["TicketSecurity:SecretKey"];
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            throw new InvalidOperationException("Falta configurar TicketSecurity:SecretKey.");
+        }
+
+        _secretKey = secretKey;
         _issuer = configuration["TicketSecurity:Issuer"] 
             ?? "UGP-Promotion";
     }

@@ -26,3 +26,40 @@
     top: 0.8rem;
     color: #fff;
 }
+
+.site-footer {
+    background: #0a0a0a;
+    border-top: 1px solid #3a301b;
+    padding: 2.5rem 0 1.5rem;
+    text-align: center;
+}
+
+.footer-brand img {
+    width: 9rem;
+    height: auto;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem 1.25rem;
+    margin-top: 1.25rem;
+}
+
+.footer-links a {
+    color: #f8f6f0;
+    padding-block: .35rem;
+    text-underline-offset: .25em;
+}
+
+.footer-social a {
+    color: #c9a84c;
+}
+
+.footer-copyright {
+    border-top: 1px solid #3a301b;
+    color: #a8a6a0;
+    margin: 1.5rem 0 0;
+    padding-top: 1rem;
+}
